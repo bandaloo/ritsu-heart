@@ -53,7 +53,14 @@ void setup() {
 // loop() function -- runs repeatedly as long as board is on ---------------
 
 void loop() {
+
+  //Test blood flow light effect
+  bloodFlowLED(strip, 255, 0, 60, 0.5f);
+
+  // Example light functions
+  
   // Fill along the length of the strip in various colors...
+  /*
   colorWipe(strip.Color(255,   0,   0), 50); // Red
   colorWipe(strip.Color(  0, 255,   0), 50); // Green
   colorWipe(strip.Color(  0,   0, 255), 50); // Blue
@@ -65,8 +72,27 @@ void loop() {
 
   rainbow(10);             // Flowing rainbow cycle along the whole strip
   theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
+  */
 }
 
+// Creates a "blood flow" light design with on the given strip with the given color (int r, int g, int b)
+// and speed (lights/sec). Need to call in loop() function to animate
+void bloodFlowLED(Adafruit_NeoPixel ledStrip, int r, int g, int b, float spd) {
+  // Frequency of light wave effect
+  float sinFreq = 0.25f;
+  
+  for (int i = 0; i < LED_COUNT; i++) {
+    float intensity = 128 * sin(sinFreq * (2 * PI) * i + millis()) + 127;
+    uint32_t color = ledStrip.Color(
+      intensity * r,
+      intensity * g,
+      intensity * b);
+    ledStrip.setPixelColor(i, color);
+  }
+
+  // Write the set values to the real-world LEDs
+  ledStrip.show();
+}
 
 // Some functions of our own for creating animated effects -----------------
 
