@@ -20,7 +20,7 @@
 #define LED_PIN    6
 
 // How many NeoPixels are attached to the Arduino?
-#define LED_COUNT 60
+#define LED_COUNT 8
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -44,6 +44,8 @@ void setup() {
 #endif
   // END of Trinket-specific code.
 
+  Serial.begin(9600);
+
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();            // Turn OFF all pixels ASAP
   strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
@@ -52,10 +54,13 @@ void setup() {
 
 // loop() function -- runs repeatedly as long as board is on ---------------
 
+#define FRAME_DELAY 5
+float t = 0;
+
 void loop() {
 
   //Test blood flow light effect
-  bloodFlowLED(strip, 255, 0, 60, 0.5f);
+  bloodFlowLED(180, 255, 0, 0.035);
 
   // Example light functions
   
@@ -71,27 +76,30 @@ void loop() {
   theaterChase(strip.Color(  0,   0, 127), 50); // Blue, half brightness
 
   rainbow(10);             // Flowing rainbow cycle along the whole strip
-  theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
   */
+  //theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
+  delay(FRAME_DELAY);
 }
 
 // Creates a "blood flow" light design with on the given strip with the given color (int r, int g, int b)
 // and speed (lights/sec). Need to call in loop() function to animate
-void bloodFlowLED(Adafruit_NeoPixel ledStrip, int r, int g, int b, float spd) {
+void bloodFlowLED(int r, int g, int b, float spd) {
   // Frequency of light wave effect
-  float sinFreq = 0.25f;
+  float sinFreq = 0.2;
+  t += spd * FRAME_DELAY;
   
   for (int i = 0; i < LED_COUNT; i++) {
-    float intensity = 128 * sin(sinFreq * (2 * PI) * i + millis()) + 127;
-    uint32_t color = ledStrip.Color(
-      intensity * r,
-      intensity * g,
-      intensity * b);
-    ledStrip.setPixelColor(i, color);
+    float intensity = 0.5 * sin(sinFreq * (2 * 3.14) * i + t) + 0.5;
+    uint32_t color = strip.Color(
+      (int)(intensity * r),
+      (int)(intensity * g),
+      (int)(intensity * b));
+    Serial.println((int)(intensity * r));
+    strip.setPixelColor(i, color);
   }
-
+  
   // Write the set values to the real-world LEDs
-  ledStrip.show();
+  strip.show();
 }
 
 // Some functions of our own for creating animated effects -----------------
