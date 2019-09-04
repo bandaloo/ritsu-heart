@@ -46,6 +46,9 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
+float prevTime = 0;
+float deltaTime;
+
 /**
  * Runs once at startup.
  */
@@ -57,11 +60,6 @@ void setup()
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();            // Turn OFF all pixels ASAP
   strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
-
-  // Testing
-  Serial.println(mapf(0.5, 0.0, 3.0, 0.0, 10.0) - 1.66666666 < 0.001);
-  Serial.println(mapf(0.0, 0.0, 3.0, 0.0, 10.0) < 0.001);
-  Serial.println(mapf(3.0, 0.0, 3.0, 0.0, 10.0) - 10.0 < 0.001);
 }
 
 /**
@@ -69,7 +67,9 @@ void setup()
  */
 void loop()
 {
-  writeNumber(2);
+  float currentTime = millis();
+  deltaTime = currentTime - prevTime;
+  prevTime = currentTime;
   // Read pot voltage and map to an appropriate speed for the blood flow rate
   float pinValue = analogRead(FLOW_RATE_POT_PIN);
   float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_SPD, MAX_SPD);
@@ -78,6 +78,7 @@ void loop()
   pinValue = analogRead(PRESSURE_POT_PIN);
   float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
 
+  writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10));
   //Test blood flow light effect
   bloodFlowLED(bloodPressure, bloodSpeed);
 
@@ -96,7 +97,12 @@ void loop()
   rainbow(10);             // Flowing rainbow cycle along the whole strip
   //theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
   */
+
   delay(LED_DELAY);
+}
+
+float clamp(float n, float lo, float hi) {
+  return n < lo ? lo : (n > hi ? hi : n);
 }
 
 float timeLED = 0;
@@ -110,11 +116,12 @@ void bloodFlowLED(float pressure, float spd)
   float sinFreq = 0.07;
 
   // Update time
-  timeLED += spd * LED_DELAY;
+  //timeLED += spd * LED_DELAY;
+  timeLED += spd * deltaTime;
 
   for (int i = 0; i < LED_COUNT; i++)
   {
-    float intensity = 127 * sin(sinFreq * (2 * PI) * i + timeLED) + 127;
+    uint32_t intensity = floor(127.0 * sin(sinFreq * (2 * PI) * i + timeLED) + 127.0);
     strip.setPixelColor(i, getColorFromPressure(pressure, intensity));
   }
 
@@ -125,7 +132,7 @@ void bloodFlowLED(float pressure, float spd)
 /**
  * Returns a color that represents the given pressure.
  */
-uint32_t getColorFromPressure(float pressure, float intensity)
+uint32_t getColorFromPressure(float pressure, int intensity)
 {
   float redValue = mapf(pressure, MIN_PRESSURE, MAX_PRESSURE, 0.0, 1.0);
   float blueValue = 1.0 - redValue;
