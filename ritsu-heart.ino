@@ -32,8 +32,8 @@
 // Blood flow constants
 #define MIN_SPD 0.003
 #define MAX_SPD 0.035
-#define MIN_PRESSURE 1
-#define MAX_PRESSURE 2
+#define MIN_PRESSURE 1.0
+#define MAX_PRESSURE 2.0
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -73,11 +73,11 @@ void loop()
   float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_SPD, MAX_SPD);
 
   // Read pot voltage and map to an appropriate pressure for the blood coloration
-  float pinValue = analogRead(PRESSURE_POT_PIN);
-  float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
+  pinValue = analogRead(PRESSURE_POT_PIN);
+  float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
 
   //Test blood flow light effect
-  bloodFlowLED(255, 0, 0, bloodSpeed);
+  bloodFlowLED(bloodPressure, bloodSpeed);
 
   // Example light functions
   /*
@@ -112,16 +112,23 @@ void bloodFlowLED(float pressure, float spd)
 
   for (int i = 0; i < LED_COUNT; i++)
   {
-    float intensity = 0.5 * sin(sinFreq * (2 * PI) * i + t) + 0.5;
-    uint32_t color = strip.Color(
-        (int)(intensity * r),
-        (int)(intensity * g),
-        (int)(intensity * b));
-    strip.setPixelColor(i, color);
+    float intensity = 127 * sin(sinFreq * (2 * PI) * i + timeLED) + 127;
+    strip.setPixelColor(i, getColorFromPressure(pressure, intensity));
   }
 
   // Write the set values to the real-world LEDs
   strip.show();
+}
+
+/**
+ * Returns a color that represents the given pressure.
+ */
+uint32_t getColorFromPressure(float pressure, float intensity)
+{
+  float redValue = mapf(pressure, MIN_PRESSURE, MAX_PRESSURE, 0.0, 1.0);
+  float blueValue = 1.0 - redValue;
+
+  return strip.Color(intensity * redValue, 0, intensity * blueValue);
 }
 
 /**
