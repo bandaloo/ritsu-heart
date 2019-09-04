@@ -51,6 +51,7 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
  */
 void setup()
 {
+  setupDigit();
   Serial.begin(9600); // Need this to write to the console (Serial monitor)
 
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
@@ -68,6 +69,7 @@ void setup()
  */
 void loop()
 {
+  writeNumber(2);
   // Read pot voltage and map to an appropriate speed for the blood flow rate
   float pinValue = analogRead(FLOW_RATE_POT_PIN);
   float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_SPD, MAX_SPD);
