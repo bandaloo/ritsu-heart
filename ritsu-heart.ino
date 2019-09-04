@@ -15,12 +15,25 @@
  #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
 
-// Which pin on the Arduino is connected to the NeoPixels?
-// On a Trinket or Gemma we suggest changing this to 1:
-#define LED_PIN    6
+// Analog pin for reading flow rate potentiometer value
+#define FLOW_RATE_POT_PIN 1
 
-// How many NeoPixels are attached to the Arduino?
+// Analog pin for reading pressure potentiometer value
+#define PRESSURE_POT_PIN 2
+
+// Analog read range
+#define ANALOG_RANGE 1023
+
+// NeoPixels
+#define LED_PIN 12
 #define LED_COUNT 8
+#define LED_DELAY 5
+
+// Blood flow constants
+#define MIN_SPD 0.003
+#define MAX_SPD 0.035
+#define MIN_PRESSURE 1
+#define MAX_PRESSURE 2
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -34,38 +47,40 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
 
-// setup() function -- runs once at startup --------------------------------
-
+/**
+ * Runs once at startup.
+ */
 void setup() {
-  // These lines are specifically to support the Adafruit Trinket 5V 16 MHz.
-  // Any other board, you can remove this part (but no harm leaving it):
-#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
-  clock_prescale_set(clock_div_1);
-#endif
-  // END of Trinket-specific code.
-
-  Serial.begin(9600);
+  Serial.begin(9600); // Need this to write to the console (Serial monitor)
 
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();            // Turn OFF all pixels ASAP
   strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
+
+  // Testing
+  Serial.println(mapf(0.5, 0.0, 3.0, 0.0, 10.0) - 1.66666666 < 0.001);
+  Serial.println(mapf(0.0, 0.0, 3.0, 0.0, 10.0) < 0.001);
+  Serial.println(mapf(3.0, 0.0, 3.0, 0.0, 10.0) - 10.0 < 0.001);
 }
 
-
-// loop() function -- runs repeatedly as long as board is on ---------------
-
-#define FRAME_DELAY 5
-float t = 0;
-
+/**
+ * Runs repeatedly as fast as the board can execute it, like a while(1) loop.
+ */
 void loop() {
+  // Read pot voltage and map to an appropriate speed for the blood flow rate
+  float pinValue = analogRead(FLOW_RATE_POT_PIN);
+  float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_SPD, MAX_SPD);
+  
+  // Read pot voltage and map to an appropriate pressure for the blood coloration
+  float pinValue = analogRead(PRESSURE_POT_PIN);
+  float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
 
   //Test blood flow light effect
-  bloodFlowLED(180, 255, 0, 0.035);
+  bloodFlowLED(255, 0, 0, bloodSpeed);
 
   // Example light functions
-  
-  // Fill along the length of the strip in various colors...
   /*
+  // Fill along the length of the strip in various colors...
   colorWipe(strip.Color(255,   0,   0), 50); // Red
   colorWipe(strip.Color(  0, 255,   0), 50); // Green
   colorWipe(strip.Color(  0,   0, 255), 50); // Blue
@@ -76,30 +91,50 @@ void loop() {
   theaterChase(strip.Color(  0,   0, 127), 50); // Blue, half brightness
 
   rainbow(10);             // Flowing rainbow cycle along the whole strip
-  */
   //theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
-  delay(FRAME_DELAY);
+  */
+  delay(LED_DELAY);
 }
 
-// Creates a "blood flow" light design with on the given strip with the given color (int r, int g, int b)
-// and speed (lights/sec). Need to call in loop() function to animate
-void bloodFlowLED(int r, int g, int b, float spd) {
+float timeLED = 0;
+/** 
+ * Creates a "blood flow" light design with on the given strip with the given pressure (kPa)
+ * and speed (independent of LED_DELAY). Call in a loop to animate.
+ */
+void bloodFlowLED(float pressure, float spd) {
   // Frequency of light wave effect
-  float sinFreq = 0.2;
-  t += spd * FRAME_DELAY;
+  float sinFreq = 0.07;
+
+  // Update time
+  timeLED += spd * LED_DELAY;
   
   for (int i = 0; i < LED_COUNT; i++) {
-    float intensity = 0.5 * sin(sinFreq * (2 * 3.14) * i + t) + 0.5;
+    float intensity = 0.5 * sin(sinFreq * (2 * PI) * i + t) + 0.5;
     uint32_t color = strip.Color(
       (int)(intensity * r),
       (int)(intensity * g),
       (int)(intensity * b));
-    Serial.println((int)(intensity * r));
     strip.setPixelColor(i, color);
   }
   
   // Write the set values to the real-world LEDs
   strip.show();
+}
+
+/**
+ * Maps a number in the specified "from" range to the "to" range (e.g. mapping 0.5 from the range [0, 1]
+ * to the range [0, 10] returns 5.0). 
+ */
+float mapf(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
+  // Map to 0.0 to 1.0 (inclusive)
+  float rangeLow = fromHigh - fromLow;
+  value = (value - fromLow) / rangeLow;
+  
+  // Map to toLow to toHigh (inclusive)
+  float rangeHigh = toHigh - toLow;
+  value = value * rangeHigh + toLow;
+  
+  return value;
 }
 
 // Some functions of our own for creating animated effects -----------------

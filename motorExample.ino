@@ -6,7 +6,7 @@ For more information see:
 https://www.instructables.com/id/Arduino-Motor-Shield-Tutorial/
 
 *************************************************************/
-
+/*
 void setup() {
   Serial.begin(9600) ;
   //Setup Channel A
@@ -42,3 +42,4 @@ void loop(){
   delay(1000);
   
 }
+*/
