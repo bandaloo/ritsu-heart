@@ -13,7 +13,7 @@
 #include <avr/power.h>  // Required for 16 MHz Adafruit Trinket
 #endif
 
-#define FRAME_DELAY 10
+#define FRAME_DELAY 0.01
 
 // NeoPixels
 #define LED_PIN 12
@@ -36,11 +36,12 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
-float prevTime = 0;
-float deltaTime;
-float timeLED = 0;
+// Loop/animation timing variables (in seconds)
+double prevTime = 0;
+double deltaTime = 0;
+double timeLED = 0;
 
-// things for the model
+// things for the model (all times in seconds)
 double Vlv = 100.0;
 double Pa = 80.0;
 
@@ -91,8 +92,7 @@ void loop() {
     double f2;
 
     // E(t)の計算 (calculation)
-    float startLoopTime = micros();
-    for (int i = 0; i < FRAME_DELAY / (dt * 1000); i++) {
+    for (int i = 0; i < FRAME_DELAY / dt; i++) {
         t = fmod(simSteps * dt, trr);
         simSteps++;
         if (t < ts) {
@@ -114,8 +114,6 @@ void loop() {
         Vlv += (fv - f1) * dt;
         Pa += (f1 - f2) * e * dt;
     }
-    float endLoopTime = micros();
-    float deltaLoopTime = endLoopTime - startLoopTime;
 
     /*
     Serial.print(t);
@@ -132,10 +130,7 @@ void loop() {
     Serial.print("\n");
     */
 
-    // arduino stuff (not related to model)
-    float currentTime = millis();
-    deltaTime = currentTime - prevTime;
-    prevTime = currentTime;
+    // Arduino stuff (not related to model)
 
     // Number of heartbeats
     writeNumber((int) floor(simSteps * dt) % 10, 20);
@@ -143,8 +138,12 @@ void loop() {
     // Animate blood flow according to model
     bloodFlowLED(Pa, f1);
 
+    // Loop timing
+    deltaTime = micros() / 1000000 - prevTime;
+    prevTime = micros() / 1000000;
+
     // Delay for the remainder of FRAME_DELAY
-    delay(FRAME_DELAY - deltaLoopTime / 1000);
+    delay(FRAME_DELAY - deltaTime);
 }
 
 float clamp(float n, float lo, float hi) {
@@ -161,8 +160,8 @@ void bloodFlowLED(float pressure, float spd) {
     float sinFreq = 0.07;
 
     // Update time
-    float minLightSpd = 0.003;
-    float maxLightSpd = 0.035;
+    float minLightSpd = 3;
+    float maxLightSpd = 35;
     timeLED += mapf(spd, MIN_SPD, MAX_SPD, minLightSpd, maxLightSpd) * deltaTime;
 
     for (int i = 0; i < LED_COUNT; i++) {
