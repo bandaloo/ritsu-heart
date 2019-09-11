@@ -53,7 +53,8 @@ float timeLED = 0;
  */
 void setup() {
     setupDigit();
-    Serial.begin(9600);  // Need this to write to the console (Serial monitor)
+//    setupMotor();
+    Serial.begin(9600); // Need this to write to the console (Serial monitor)
 
     strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();             // Turn OFF all pixels ASAP
