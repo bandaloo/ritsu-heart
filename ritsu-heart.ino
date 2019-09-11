@@ -13,19 +13,11 @@
 #include <avr/power.h>  // Required for 16 MHz Adafruit Trinket
 #endif
 
-// Analog pin for reading flow rate potentiometer value
-#define FLOW_RATE_POT_PIN 1
-
-// Analog pin for reading pressure potentiometer value
-#define PRESSURE_POT_PIN 2
-
-// Analog read range
-#define ANALOG_RANGE 1023
+#define FRAME_DELAY 10
 
 // NeoPixels
 #define LED_PIN 12
 #define LED_COUNT 8
-#define FRAME_DELAY 10
 
 // Blood flow constants
 #define MIN_SPD -300
@@ -145,19 +137,13 @@ void loop() {
     deltaTime = currentTime - prevTime;
     prevTime = currentTime;
 
-    // Read pot voltage and map to an appropriate pressure for the blood coloration
-//    pinValue = analogRead(PRESSURE_POT_PIN);
-//    float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
-
-    // first number
+    // Number of heartbeats
     writeNumber((int) floor(simSteps * dt) % 10, 20);
-    Serial.println((int) floor(simSteps * dt) % 10);
-    //writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10), 20);
-    //writeNumber(8, 20);
-    //Test blood flow light effect
+
+    // Animate blood flow according to model
     bloodFlowLED(Pa, f1);
 
-    // Example light functions
+    // Delay for the remainder of FRAME_DELAY
     delay(FRAME_DELAY - deltaLoopTime / 1000);
 }
 
