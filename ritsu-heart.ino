@@ -52,8 +52,7 @@ float timeLED = 0;
  * Runs once at startup.
  */
 void setup() {
-    setupDigit();
-//    setupMotor();
+    setupDigit(20); // run setup for the first motor
     Serial.begin(9600); // Need this to write to the console (Serial monitor)
 
     strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
@@ -76,7 +75,9 @@ void loop() {
     pinValue = analogRead(PRESSURE_POT_PIN);
     float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
 
-    writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10));
+    // first number
+    writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10), 20);
+    //writeNumber(8, 20);
     //Test blood flow light effect
     bloodFlowLED(bloodPressure, bloodSpeed);
 
@@ -89,8 +90,9 @@ float clamp(float n, float lo, float hi) {
 }
 
 /** 
- * Creates a "blood flow" light design with on the given strip with the given pressure (kPa)
- * and speed (independent of LED_DELAY). Call in a loop to animate.
+ * Creates a "blood flow" light design with on the given strip with the given
+ * pressure (kPa) and speed (independent of LED_DELAY). Call in a loop to
+ * animate.
  */
 void bloodFlowLED(float pressure, float spd) {
     // Frequency of light wave effect
