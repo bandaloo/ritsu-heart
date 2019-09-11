@@ -143,7 +143,7 @@ void loop() {
     prevTime = micros() / 1000000;
 
     // Delay for the remainder of FRAME_DELAY
-    delay(FRAME_DELAY - deltaTime);
+    delay((FRAME_DELAY - deltaTime) * 1000);
 }
 
 float clamp(float n, float lo, float hi) {
