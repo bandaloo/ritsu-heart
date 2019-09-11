@@ -1,5 +1,3 @@
-// A basic everyday NeoPixel strip test program.
-
 // NEOPIXEL BEST PRACTICES for most reliable operation:
 // - Add 1000 uF CAPACITOR between NeoPixel strip's + and - connections.
 // - MINIMIZE WIRING LENGTH between microcontroller board and first pixel.
@@ -48,6 +46,7 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 float prevTime = 0;
 float deltaTime;
+float timeLED = 0;
 
 /**
  * Runs once at startup.
@@ -81,21 +80,6 @@ void loop() {
     bloodFlowLED(bloodPressure, bloodSpeed);
 
     // Example light functions
-    /*
-  // Fill along the length of the strip in various colors...
-  colorWipe(strip.Color(255,   0,   0), 50); // Red
-  colorWipe(strip.Color(  0, 255,   0), 50); // Green
-  colorWipe(strip.Color(  0,   0, 255), 50); // Blue
-
-  // Do a theater marquee effect in various colors...
-  theaterChase(strip.Color(127, 127, 127), 50); // White, half brightness
-  theaterChase(strip.Color(127,   0,   0), 50); // Red, half brightness
-  theaterChase(strip.Color(  0,   0, 127), 50); // Blue, half brightness
-
-  rainbow(10);             // Flowing rainbow cycle along the whole strip
-  //theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
-  */
-
     delay(LED_DELAY);
 }
 
@@ -103,7 +87,6 @@ float clamp(float n, float lo, float hi) {
     return n < lo ? lo : (n > hi ? hi : n);
 }
 
-float timeLED = 0;
 /** 
  * Creates a "blood flow" light design with on the given strip with the given pressure (kPa)
  * and speed (independent of LED_DELAY). Call in a loop to animate.
