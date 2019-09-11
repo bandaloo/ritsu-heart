@@ -84,8 +84,7 @@ void loop()
     float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
 
     // Write a number representing the blood pressure from 0 to 9 on the display
-//    writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10));
-    writeNumber(7);
+    writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10));
     
     //Test blood flow light effect
     bloodFlowLED(bloodPressure, bloodSpeed);
