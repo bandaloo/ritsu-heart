@@ -28,8 +28,8 @@
 #define FRAME_DELAY 10
 
 // Blood flow constants
-#define MIN_SPD 0.003
-#define MAX_SPD 0.035
+#define MIN_SPD -300
+#define MAX_SPD 200
 #define MIN_PRESSURE 1.0
 #define MAX_PRESSURE 2.0
 
@@ -145,14 +145,10 @@ void loop() {
     float currentTime = millis();
     deltaTime = currentTime - prevTime;
     prevTime = currentTime;
-    // Read pot voltage and map to an appropriate speed for the blood flow rate
-    float pinValue = analogRead(FLOW_RATE_POT_PIN);
-    //float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_SPD, MAX_SPD);
-    float bloodSpeed = mapf(f1, -300, 200, MIN_SPD, MAX_SPD);
 
     // Read pot voltage and map to an appropriate pressure for the blood coloration
-    pinValue = analogRead(PRESSURE_POT_PIN);
-    float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
+//    pinValue = analogRead(PRESSURE_POT_PIN);
+//    float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
 
     // first number
     writeNumber((int) floor(simSteps * dt) % 10, 20);
@@ -160,7 +156,7 @@ void loop() {
     //writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10), 20);
     //writeNumber(8, 20);
     //Test blood flow light effect
-    bloodFlowLED(bloodPressure, bloodSpeed);
+    bloodFlowLED(2, f1);
 
     // Example light functions
     delay(FRAME_DELAY - deltaLoopTime / 1000);
@@ -180,8 +176,9 @@ void bloodFlowLED(float pressure, float spd) {
     float sinFreq = 0.07;
 
     // Update time
-
-    timeLED += spd * deltaTime;
+    float minLightSpd = 0.003;
+    float maxLightSpd = 0.035;
+    timeLED += mapf(spd, MIN_SPD, MAX_SPD, minLightSpd, maxLightSpd) * deltaTime;
 
     for (int i = 0; i < LED_COUNT; i++) {
         uint32_t intensity = floor(127.0 * sin(sinFreq * (2 * PI) * i + timeLED) + 127.0);
