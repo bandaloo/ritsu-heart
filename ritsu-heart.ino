@@ -1,4 +1,4 @@
-// Main file for heart program on Arduino
+// A basic everyday NeoPixel strip test program.
 
 // NEOPIXEL BEST PRACTICES for most reliable operation:
 // - Add 1000 uF CAPACITOR between NeoPixel strip's + and - connections.
@@ -12,11 +12,8 @@
 
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
-#include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#include <avr/power.h>  // Required for 16 MHz Adafruit Trinket
 #endif
-
-// Program constants
-#define FRAME_DELAY 5
 
 // Analog pin for reading flow rate potentiometer value
 #define FLOW_RATE_POT_PIN 1
@@ -30,6 +27,7 @@
 // NeoPixels
 #define LED_PIN 12
 #define LED_COUNT 8
+#define LED_DELAY 5
 
 // Blood flow constants
 #define MIN_SPD 0.003
@@ -48,32 +46,28 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
-/**
-   Runs once at startup.
-*/
-void setup()
-{
-    setupDigit();
-    Serial.begin(9600); // Need this to write to the console (Serial monitor)
-
-    strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
-    strip.show();            // Turn OFF all pixels ASAP
-    strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
-}
-
 float prevTime = 0;
 float deltaTime;
 
 /**
-   Runs repeatedly as fast as the board can execute it, like a while(1) loop.
-*/
-void loop()
-{
-    // Get time since last frame
+ * Runs once at startup.
+ */
+void setup() {
+    setupDigit();
+    Serial.begin(9600);  // Need this to write to the console (Serial monitor)
+
+    strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
+    strip.show();             // Turn OFF all pixels ASAP
+    strip.setBrightness(50);  // Set BRIGHTNESS to about 1/5 (max = 255)
+}
+
+/**
+ * Runs repeatedly as fast as the board can execute it, like a while(1) loop.
+ */
+void loop() {
     float currentTime = millis();
     deltaTime = currentTime - prevTime;
     prevTime = currentTime;
-    
     // Read pot voltage and map to an appropriate speed for the blood flow rate
     float pinValue = analogRead(FLOW_RATE_POT_PIN);
     float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_SPD, MAX_SPD);
@@ -82,27 +76,39 @@ void loop()
     pinValue = analogRead(PRESSURE_POT_PIN);
     float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
 
-    // Write a number representing the blood pressure from 0 to 9 on the display
     writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10));
-    
     //Test blood flow light effect
     bloodFlowLED(bloodPressure, bloodSpeed);
 
-    delay(FRAME_DELAY);
+    // Example light functions
+    /*
+  // Fill along the length of the strip in various colors...
+  colorWipe(strip.Color(255,   0,   0), 50); // Red
+  colorWipe(strip.Color(  0, 255,   0), 50); // Green
+  colorWipe(strip.Color(  0,   0, 255), 50); // Blue
+
+  // Do a theater marquee effect in various colors...
+  theaterChase(strip.Color(127, 127, 127), 50); // White, half brightness
+  theaterChase(strip.Color(127,   0,   0), 50); // Red, half brightness
+  theaterChase(strip.Color(  0,   0, 127), 50); // Blue, half brightness
+
+  rainbow(10);             // Flowing rainbow cycle along the whole strip
+  //theaterChaseRainbow(50); // Rainbow-enhanced theaterChase variant
+  */
+
+    delay(LED_DELAY);
 }
 
-float clamp(float n, float lo, float hi)
-{
+float clamp(float n, float lo, float hi) {
     return n < lo ? lo : (n > hi ? hi : n);
 }
 
 float timeLED = 0;
-/**
-   Creates a "blood flow" light design with on the given strip with the given pressure (kPa)
-   and speed (independent of FRAME_DELAY). Call in a loop to animate.
-*/
-void bloodFlowLED(float pressure, float spd)
-{
+/** 
+ * Creates a "blood flow" light design with on the given strip with the given pressure (kPa)
+ * and speed (independent of LED_DELAY). Call in a loop to animate.
+ */
+void bloodFlowLED(float pressure, float spd) {
     // Frequency of light wave effect
     float sinFreq = 0.07;
 
@@ -110,8 +116,7 @@ void bloodFlowLED(float pressure, float spd)
 
     timeLED += spd * deltaTime;
 
-    for (int i = 0; i < LED_COUNT; i++)
-    {
+    for (int i = 0; i < LED_COUNT; i++) {
         uint32_t intensity = floor(127.0 * sin(sinFreq * (2 * PI) * i + timeLED) + 127.0);
         strip.setPixelColor(i, getColorFromPressure(pressure, intensity));
     }
@@ -121,10 +126,9 @@ void bloodFlowLED(float pressure, float spd)
 }
 
 /**
-   Returns a color that represents the given pressure (kPa).
-*/
-uint32_t getColorFromPressure(float pressure, int intensity)
-{
+ * Returns a color that represents the given pressure.
+ */
+uint32_t getColorFromPressure(float pressure, int intensity) {
     float redValue = mapf(pressure, MIN_PRESSURE, MAX_PRESSURE, 0.0, 1.0);
     float blueValue = 1.0 - redValue;
 
@@ -132,11 +136,10 @@ uint32_t getColorFromPressure(float pressure, int intensity)
 }
 
 /**
-   Maps a number in the specified "from" range to the "to" range (e.g. mapping 0.5 from the range [0, 1]
-   to the range [0, 10] returns 5.0).
-*/
-float mapf(float value, float fromLow, float fromHigh, float toLow, float toHigh)
-{
+ * Maps a number in the specified "from" range to the "to" range (e.g. mapping 0.5 from the range [0, 1]
+ * to the range [0, 10] returns 5.0). 
+ */
+float mapf(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
     // Map to 0.0 to 1.0 (inclusive)
     float rangeLow = fromHigh - fromLow;
     value = (value - fromLow) / rangeLow;
