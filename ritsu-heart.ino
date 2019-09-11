@@ -25,7 +25,7 @@
 // NeoPixels
 #define LED_PIN 12
 #define LED_COUNT 8
-#define LED_DELAY 5
+#define FRAME_DELAY 10
 
 // Blood flow constants
 #define MIN_SPD 0.003
@@ -88,7 +88,7 @@ void setup() {
     strip.setBrightness(50);  // Set BRIGHTNESS to about 1/5 (max = 255)
 }
 
-int simSteps = 0;
+long simSteps = 0;
 
 /**
  * Runs repeatedly as fast as the board can execute it, like a while(1) loop.
@@ -99,7 +99,8 @@ void loop() {
     double f2;
 
     // E(t)の計算 (calculation)
-    for (int i = 0; i < LED_DELAY; i++) {
+    float startLoopTime = micros();
+    for (int i = 0; i < FRAME_DELAY / (dt * 1000); i++) {
         t = fmod(simSteps * dt, trr);
         simSteps++;
         if (t < ts) {
@@ -121,8 +122,11 @@ void loop() {
         Vlv += (fv - f1) * dt;
         Pa += (f1 - f2) * e * dt;
     }
+    float endLoopTime = micros();
+    float deltaLoopTime = endLoopTime - startLoopTime;
 
     //printf("%lf %lf %lf\n", t, Vlv, Pa);
+    /*
     Serial.print(t);
     Serial.print(" ");
     Serial.print(Vlv);
@@ -135,6 +139,7 @@ void loop() {
     Serial.print(" ");
     Serial.print(f2);
     Serial.print("\n");
+    */
 
     // arduino stuff (not related to model)
     float currentTime = millis();
@@ -142,20 +147,23 @@ void loop() {
     prevTime = currentTime;
     // Read pot voltage and map to an appropriate speed for the blood flow rate
     float pinValue = analogRead(FLOW_RATE_POT_PIN);
-    float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_SPD, MAX_SPD);
+    //float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_SPD, MAX_SPD);
+    float bloodSpeed = mapf(f1, -300, 200, MIN_SPD, MAX_SPD);
 
     // Read pot voltage and map to an appropriate pressure for the blood coloration
     pinValue = analogRead(PRESSURE_POT_PIN);
     float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
 
     // first number
-    writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10), 20);
+    writeNumber((int) floor(simSteps * dt) % 10, 20);
+    Serial.println((int) floor(simSteps * dt) % 10);
+    //writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10), 20);
     //writeNumber(8, 20);
     //Test blood flow light effect
     bloodFlowLED(bloodPressure, bloodSpeed);
 
     // Example light functions
-    delay(LED_DELAY);
+    delay(FRAME_DELAY - deltaLoopTime / 1000);
 }
 
 float clamp(float n, float lo, float hi) {
@@ -164,7 +172,7 @@ float clamp(float n, float lo, float hi) {
 
 /** 
  * Creates a "blood flow" light design with on the given strip with the given
- * pressure (kPa) and speed (independent of LED_DELAY). Call in a loop to
+ * pressure (kPa) and speed (independent of FRAME_DELAY). Call in a loop to
  * animate.
  */
 void bloodFlowLED(float pressure, float spd) {
