@@ -30,8 +30,8 @@
 // Blood flow constants
 #define MIN_SPD -300
 #define MAX_SPD 200
-#define MIN_PRESSURE 1.0
-#define MAX_PRESSURE 2.0
+#define MIN_PRESSURE 4.0
+#define MAX_PRESSURE 13.0
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -125,7 +125,6 @@ void loop() {
     float endLoopTime = micros();
     float deltaLoopTime = endLoopTime - startLoopTime;
 
-    //printf("%lf %lf %lf\n", t, Vlv, Pa);
     /*
     Serial.print(t);
     Serial.print(" ");
@@ -156,7 +155,7 @@ void loop() {
     //writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10), 20);
     //writeNumber(8, 20);
     //Test blood flow light effect
-    bloodFlowLED(2, f1);
+    bloodFlowLED(Pa, f1);
 
     // Example light functions
     delay(FRAME_DELAY - deltaLoopTime / 1000);
@@ -193,6 +192,7 @@ void bloodFlowLED(float pressure, float spd) {
  * Returns a color that represents the given pressure.
  */
 uint32_t getColorFromPressure(float pressure, int intensity) {
+    pressure = clamp(pressure, MIN_PRESSURE, MAX_PRESSURE);
     float redValue = mapf(pressure, MIN_PRESSURE, MAX_PRESSURE, 0.0, 1.0);
     float blueValue = 1.0 - redValue;
 
