@@ -54,6 +54,7 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 void setup()
 {
     setupDigit();
+//    setupMotor();
     Serial.begin(9600); // Need this to write to the console (Serial monitor)
 
     strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
@@ -83,12 +84,15 @@ void loop()
     float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
 
     // Write a number representing the blood pressure from 0 to 9 on the display
-    writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10));
+//    writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10));
+    writeNumber(7);
     
     //Test blood flow light effect
     bloodFlowLED(bloodPressure, bloodSpeed);
 
     delay(FRAME_DELAY);
+
+//    startMotor(255);
 }
 
 float clamp(float n, float lo, float hi)

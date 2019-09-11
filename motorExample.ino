@@ -6,6 +6,23 @@ For more information see:
 https://www.instructables.com/id/Arduino-Motor-Shield-Tutorial/
 
 *************************************************************/
+void setupMotor() {
+  //Setup Channel A
+  pinMode(13, OUTPUT); //Initiates Motor Channel A pin
+  pinMode(8, OUTPUT); //Initiates Brake Channel A pin
+}
+
+// this function takes the speed to spin the motor
+// max speed = 255
+// min speed = 1 - i think
+void startMotor(int speed){
+  //forward @ full speed
+  digitalWrite(13, HIGH); //Establishes forward direction of Channel A
+  digitalWrite(8, LOW);   //Disengage the Brake for Channel A
+  analogWrite(11, speed);   //Spins the motor on Channel A at full speed
+}
+
+
 /*
 void setup() {
   Serial.begin(9600) ;
