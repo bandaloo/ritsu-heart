@@ -139,14 +139,15 @@ void loop() {
     bloodFlowLED(Pa, f1);
 
     // Loop timing
-    deltaTime = micros() / 1000000 - prevTime;
-    prevTime = micros() / 1000000;
+    double curTime = micros() / 1000000;
+    deltaTime = curTime - prevTime;
+    prevTime = curTime;
 
     // Loop timing stuff
     double timeLeftInFrame = FRAME_DELAY - deltaTime;
     if (timeLeftInFrame >= 0) {
         // Delay for the remainder of FRAME_DELAY
-        delay((FRAME_DELAY - deltaTime) * 1000); // delay() takes milliseconds
+        delay(timeLeftInFrame * 1000); // delay() takes milliseconds
     } else {
         // Don't delay, program is lagging behind
         Serial.print("WARNING: Simulation ran ");
