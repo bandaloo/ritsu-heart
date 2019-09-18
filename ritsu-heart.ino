@@ -20,8 +20,8 @@
 #define LED_COUNT 8
 
 // Blood flow constants
-#define MIN_SPD -300
-#define MAX_SPD 200
+#define MIN_SPD -200
+#define MAX_SPD 100
 #define MIN_PRESSURE 4.0
 #define MAX_PRESSURE 13.0
 
@@ -139,7 +139,7 @@ void loop() {
     bloodFlowLED(Pa, f1);
 
     // Loop timing
-    double curTime = micros() / 1000000;
+    double curTime = micros() / 1000000.0;
     deltaTime = curTime - prevTime;
     prevTime = curTime;
 
@@ -167,11 +167,11 @@ float clamp(float n, float lo, float hi) {
  */
 void bloodFlowLED(float pressure, float spd) {
     // Frequency of light wave effect
-    float sinFreq = 0.07;
+    float sinFreq = 0.2;
 
     // Update time
-    float minLightSpd = 3;
-    float maxLightSpd = 35;
+    float minLightSpd = 0;
+    float maxLightSpd = 25;
     timeLED += mapf(spd, MIN_SPD, MAX_SPD, minLightSpd, maxLightSpd) * deltaTime;
 
     for (int i = 0; i < LED_COUNT; i++) {
