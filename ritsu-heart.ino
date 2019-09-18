@@ -19,15 +19,20 @@
 #define LED_PIN 12
 #define LED_COUNT 8
 
+// Pins
+#define BUZZER_PIN 53
+
 // Blood flow constants
 #define MIN_SPD -200
 #define MAX_SPD 100
+
 #define MIN_PRESSURE 0.0 // used to be 4.0
 #define MAX_PRESSURE 20.0 // used to be 13.0
 
 #define TIME_SCALAR 0.1
 
 #define DEFAULT_SCENARIO 2
+#define BEEP_DURATION 0.15
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -44,6 +49,7 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 double prevTime = 0;
 double deltaTime = 0;
 double timeLED = 0;
+double timeBeep = BEEP_DURATION;
 
 // things for the model (all times in seconds)
 double Vlv = 100.0;
@@ -160,9 +166,12 @@ void setup() {
     strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();             // Turn OFF all pixels ASAP
     strip.setBrightness(50);  // Set BRIGHTNESS to about 1/5 (max = 255)
+
+    pinMode(BUZZER_PIN, OUTPUT); // Setup buzzer for digital control
 }
 
 long simSteps = 0;
+int heartbeatNum = 0;
 
 /**
  * Runs repeatedly as fast as the board can execute it, like a while(1) loop.
@@ -214,11 +223,18 @@ void loop() {
     // Arduino stuff (not related to model)
 
     // Number of heartbeats
-    writeNumber((int) floor(simSteps * dt / trr) % 10, 20);
-    //Serial.println(simSteps * dt);
+    int prevNum = heartbeatNum;
+    heartbeatNum = (int) floor(simSteps * dt) % 10;
+    if (heartbeatNum != prevNum) {
+        startBeep();
+        writeNumber(heartbeatNum, 20);
+    }
 
     // Animate blood flow according to model
     bloodFlowLED(Pa, f1);
+
+    // Step buzzer so it turns off after BEEP_DURATION
+    stepBeep();
 
     // Loop timing
     double curTime = micros() / 1000000.0;
@@ -236,10 +252,6 @@ void loop() {
         //Serial.print(timeLeftInFrame);
         //Serial.println("ms too long this frame.");
     }
-}
-
-float clamp(float n, float lo, float hi) {
-    return n < lo ? lo : (n > hi ? hi : n);
 }
 
 /** 
@@ -263,6 +275,27 @@ void bloodFlowLED(float pressure, float spd) {
 
     // Write the set values to the real-world LEDs
     strip.show();
+}
+
+/**
+ * Begins the beep noise and resets the beep timer
+ */
+ void startBeep() {
+    timeBeep = BEEP_DURATION;
+    digitalWrite(BUZZER_PIN, HIGH);
+ }
+
+/**
+ * Decrements the beep timer and turns off the buzzer if it has been playing for BEEP_DURATION seconds
+ */
+void stepBeep() {
+    // Decrement beep timer
+    timeBeep -= deltaTime;
+
+    // Check if buzzer should trn off
+    if (timeBeep <= 0.0) {
+        digitalWrite(BUZZER_PIN, LOW);
+    }
 }
 
 /**
@@ -290,4 +323,8 @@ float mapf(float value, float fromLow, float fromHigh, float toLow, float toHigh
     value = value * rangeHigh + toLow;
 
     return value;
+}
+
+float clamp(float n, float lo, float hi) {
+    return n < lo ? lo : (n > hi ? hi : n);
 }
