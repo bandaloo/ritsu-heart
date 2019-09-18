@@ -13,15 +13,15 @@
 #include <avr/power.h>  // Required for 16 MHz Adafruit Trinket
 #endif
 
-#define FRAME_DELAY 10
+#define FRAME_DELAY 0.01
 
 // NeoPixels
 #define LED_PIN 12
 #define LED_COUNT 8
 
 // Blood flow constants
-#define MIN_SPD -300
-#define MAX_SPD 200
+#define MIN_SPD -200
+#define MAX_SPD 100
 #define MIN_PRESSURE 4.0
 #define MAX_PRESSURE 13.0
 
@@ -36,11 +36,12 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
-float prevTime = 0;
-float deltaTime;
-float timeLED = 0;
+// Loop/animation timing variables (in seconds)
+double prevTime = 0;
+double deltaTime = 0;
+double timeLED = 0;
 
-// things for the model
+// things for the model (all times in seconds)
 double Vlv = 100.0;
 double Pa = 80.0;
 
@@ -91,8 +92,7 @@ void loop() {
     double f2;
 
     // E(t)の計算 (calculation)
-    float startLoopTime = micros();
-    for (int i = 0; i < FRAME_DELAY / (dt * 1000); i++) {
+    for (int i = 0; i < FRAME_DELAY / dt; i++) {
         t = fmod(simSteps * dt, trr);
         simSteps++;
         if (t < ts) {
@@ -114,8 +114,6 @@ void loop() {
         Vlv += (fv - f1) * dt;
         Pa += (f1 - f2) * e * dt;
     }
-    float endLoopTime = micros();
-    float deltaLoopTime = endLoopTime - startLoopTime;
 
     /*
     Serial.print(t);
@@ -132,10 +130,7 @@ void loop() {
     Serial.print("\n");
     */
 
-    // arduino stuff (not related to model)
-    float currentTime = millis();
-    deltaTime = currentTime - prevTime;
-    prevTime = currentTime;
+    // Arduino stuff (not related to model)
 
     // Number of heartbeats
     writeNumber((int) floor(simSteps * dt) % 10, 20);
@@ -143,8 +138,22 @@ void loop() {
     // Animate blood flow according to model
     bloodFlowLED(Pa, f1);
 
-    // Delay for the remainder of FRAME_DELAY
-    delay(FRAME_DELAY - deltaLoopTime / 1000);
+    // Loop timing
+    double curTime = micros() / 1000000.0;
+    deltaTime = curTime - prevTime;
+    prevTime = curTime;
+
+    // Loop timing stuff
+    double timeLeftInFrame = FRAME_DELAY - deltaTime;
+    if (timeLeftInFrame >= 0) {
+        // Delay for the remainder of FRAME_DELAY
+        delay(timeLeftInFrame * 1000); // delay() takes milliseconds
+    } else {
+        // Don't delay, program is lagging behind
+        Serial.print("WARNING: Simulation ran ");
+        Serial.print(timeLeftInFrame);
+        Serial.println("ms too long this frame.");
+    }
 }
 
 float clamp(float n, float lo, float hi) {
@@ -158,11 +167,11 @@ float clamp(float n, float lo, float hi) {
  */
 void bloodFlowLED(float pressure, float spd) {
     // Frequency of light wave effect
-    float sinFreq = 0.07;
+    float sinFreq = 0.2;
 
     // Update time
-    float minLightSpd = 0.003;
-    float maxLightSpd = 0.035;
+    float minLightSpd = 0;
+    float maxLightSpd = 25;
     timeLED += mapf(spd, MIN_SPD, MAX_SPD, minLightSpd, maxLightSpd) * deltaTime;
 
     for (int i = 0; i < LED_COUNT; i++) {
