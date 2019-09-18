@@ -22,10 +22,12 @@
 // Blood flow constants
 #define MIN_SPD -200
 #define MAX_SPD 100
-#define MIN_PRESSURE 4.0
-#define MAX_PRESSURE 13.0
+#define MIN_PRESSURE 0.0 // used to be 4.0
+#define MAX_PRESSURE 20.0 // used to be 13.0
 
 #define TIME_SCALAR 0.1
+
+#define DEFAULT_SCENARIO 2
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -79,12 +81,51 @@ typedef struct scenario {
 } Scenario;
 
 Scenario scenarios[] {
-    {.name = "resting", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
-    {.name = "old", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
-    {.name = "sick", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
-    {.name = "running", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
-    {.name = "cold", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
-    {.name = "warm", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0}
+    {
+        .name = "rest",
+        .inC = 5.0,
+        .inR = 1.0,
+        .inPv = 10.0,
+        .intrr = 1.0,
+        .inR0 = 0.005,
+        .inRv = 0.01
+    },
+    {
+        .name = "old",
+        .inC = 15.0, // higher compliance
+        .inR = 10.5, // higher resistance
+        .inPv = 10.0,
+        .intrr = 1.0,
+        .inR0 = 0.005,
+        .inRv = 0.01
+    },
+    {
+        .name = "exercising",
+        .inC = 5.0,
+        .inR = 1.0,
+        .inPv = 15.0, // slight increase in venous pressure
+        .intrr = 0.3, // heartrate increases
+        .inR0 = 0.005,
+        .inRv = 0.01
+    },
+    {
+        .name = "cold",
+        .inC = 5.0,
+        .inR = 1.5, // higher resistance
+        .inPv = 10.0,
+        .intrr = 1.0,
+        .inR0 = 0.005,
+        .inRv = 0.01
+    },
+    {
+        .name = "warm",
+        .inC = 5.0,
+        .inR = 0.5, // lower resistance
+        .inPv = 10.0,
+        .intrr = 1.0,
+        .inR0 = 0.005,
+        .inRv = 0.01
+    }
 };
 
 // set scenario
@@ -95,17 +136,26 @@ void setScenario(int i) {
     trr = scenarios[i].intrr;
     R0 = scenarios[i].inR0;
     Rv = scenarios[i].inRv;
+
+    Serial.println(scenarios[i].name);
+    Serial.println(C);
+    Serial.println(R);
+    Serial.println(Pv);
+    Serial.println(trr);
+    Serial.println(R0);
+    Serial.println(Rv);
 }
 
 /**
  * Runs once at startup.
  */
 void setup() {
+    Serial.begin(9600); // Need this to write to the console (Serial monitor)
+    setScenario(DEFAULT_SCENARIO);
     ts = 0.3 * sqrt(trr);
     maxstep = maxtime / dt;
 
     setupDigit(20); // run setup for the first motor
-    Serial.begin(9600); // Need this to write to the console (Serial monitor)
 
     strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();             // Turn OFF all pixels ASAP
@@ -148,26 +198,24 @@ void loop() {
     }
 
     // Uncomment these to print stats for testing
-    /*
-    Serial.print(t);
-    Serial.print(" ");
-    Serial.print(Vlv);
-    Serial.print(" ");
-    Serial.print(Pa);
-    Serial.print(" ");
-    Serial.print(fv);
-    Serial.print(" ");
-    Serial.print(f1);
-    Serial.print(" ");
-    Serial.print(f2);
-    Serial.print("\n");
-    */
+    //Serial.print(t);
+    //Serial.print(" ");
+    //Serial.print(Vlv);
+    //Serial.print(" ");
+    //Serial.println(Pa);
+    //Serial.print(" ");
+    //Serial.print(fv);
+    //Serial.print(" ");
+    //Serial.print(f1);
+    //Serial.print(" ");
+    //Serial.print(f2);
+    //Serial.print("\n");
 
     // Arduino stuff (not related to model)
 
     // Number of heartbeats
-    writeNumber((int) floor(simSteps * dt) % 10, 20);
-    Serial.println(simSteps * dt);
+    writeNumber((int) floor(simSteps * dt / trr) % 10, 20);
+    //Serial.println(simSteps * dt);
 
     // Animate blood flow according to model
     bloodFlowLED(Pa, f1);
@@ -184,9 +232,9 @@ void loop() {
         delay(timeLeftInFrame * 1000); // delay() takes milliseconds
     } else {
         // Don't delay, program is lagging behind
-        Serial.print("WARNING: Simulation ran ");
-        Serial.print(timeLeftInFrame);
-        Serial.println("ms too long this frame.");
+        //Serial.print("WARNING: Simulation ran ");
+        //Serial.print(timeLeftInFrame);
+        //Serial.println("ms too long this frame.");
     }
 }
 
