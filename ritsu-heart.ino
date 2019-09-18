@@ -25,8 +25,13 @@
 // Blood flow constants
 #define MIN_SPD -200
 #define MAX_SPD 100
-#define MIN_PRESSURE 4.0
-#define MAX_PRESSURE 13.0
+
+#define MIN_PRESSURE 0.0 // used to be 4.0
+#define MAX_PRESSURE 20.0 // used to be 13.0
+
+#define TIME_SCALAR 0.1
+
+#define DEFAULT_SCENARIO 2
 #define BEEP_DURATION 0.15
 
 // Declare our NeoPixel strip object:
@@ -48,17 +53,17 @@ double timeBeep = BEEP_DURATION;
 
 // things for the model (all times in seconds)
 double Vlv = 100.0;
-double Pa = 80.0;
+double Pa = 80.0; 
 
 double Pv = 10.0; // we can change this
 double Po = 10.0;
-double Rv = 0.01;
-double R0 = 0.005;
-double R = 1.0; // we can change this
-double C = 5.0; // we can change this
+double Rv = 0.01; // changes when you have a disease
+double R0 = 0.005; // resistance in the aorta
+double R = 1.0; // we can change this (changes with temperature)
+double C = 5.0; // we can change this (reduces with age, assuming this is aortic)
 
 double maxtime = 1.0;
-double dt = 0.001;
+double dt = 0.001; 
 double trr = 1.0;
 double ts;
 double es = 1.0;
@@ -68,18 +73,95 @@ double e;
 int i;
 int maxstep;
 double t;
-
 // end of things for the model
+
+// scenario struct for changing all settings at once
+typedef struct scenario {
+    char * name;
+    double inC;
+    double inR;
+    double inPv;
+    double intrr;
+    double inR0;
+    double inRv;
+} Scenario;
+
+Scenario scenarios[] {
+    {
+        .name = "rest",
+        .inC = 5.0,
+        .inR = 1.0,
+        .inPv = 10.0,
+        .intrr = 1.0,
+        .inR0 = 0.005,
+        .inRv = 0.01
+    },
+    {
+        .name = "old",
+        .inC = 15.0, // higher compliance
+        .inR = 10.5, // higher resistance
+        .inPv = 10.0,
+        .intrr = 1.0,
+        .inR0 = 0.005,
+        .inRv = 0.01
+    },
+    {
+        .name = "exercising",
+        .inC = 5.0,
+        .inR = 1.0,
+        .inPv = 15.0, // slight increase in venous pressure
+        .intrr = 0.3, // heartrate increases
+        .inR0 = 0.005,
+        .inRv = 0.01
+    },
+    {
+        .name = "cold",
+        .inC = 5.0,
+        .inR = 1.5, // higher resistance
+        .inPv = 10.0,
+        .intrr = 1.0,
+        .inR0 = 0.005,
+        .inRv = 0.01
+    },
+    {
+        .name = "warm",
+        .inC = 5.0,
+        .inR = 0.5, // lower resistance
+        .inPv = 10.0,
+        .intrr = 1.0,
+        .inR0 = 0.005,
+        .inRv = 0.01
+    }
+};
+
+// set scenario
+void setScenario(int i) {
+    C = scenarios[i].inC;
+    R = scenarios[i].inR;
+    Pv = scenarios[i].inPv;
+    trr = scenarios[i].intrr;
+    R0 = scenarios[i].inR0;
+    Rv = scenarios[i].inRv;
+
+    Serial.println(scenarios[i].name);
+    Serial.println(C);
+    Serial.println(R);
+    Serial.println(Pv);
+    Serial.println(trr);
+    Serial.println(R0);
+    Serial.println(Rv);
+}
 
 /**
  * Runs once at startup.
  */
 void setup() {
+    Serial.begin(9600); // Need this to write to the console (Serial monitor)
+    setScenario(DEFAULT_SCENARIO);
     ts = 0.3 * sqrt(trr);
     maxstep = maxtime / dt;
 
     setupDigit(20); // run setup for the first motor
-    Serial.begin(9600); // Need this to write to the console (Serial monitor)
 
     strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();             // Turn OFF all pixels ASAP
@@ -100,7 +182,8 @@ void loop() {
     double f2;
 
     // E(t)の計算 (calculation)
-    for (int i = 0; i < FRAME_DELAY / dt; i++) {
+    for (int i = 0; i < FRAME_DELAY * TIME_SCALAR / dt; i++) {
+    //for (int i = 0; i < 2; i++) {
         t = fmod(simSteps * dt, trr);
         simSteps++;
         if (t < ts) {
@@ -123,26 +206,25 @@ void loop() {
         Pa += (f1 - f2) * e * dt;
     }
 
-    /*
-    Serial.print(t);
-    Serial.print(" ");
-    Serial.print(Vlv);
-    Serial.print(" ");
-    Serial.print(Pa);
-    Serial.print(" ");
-    Serial.print(fv);
-    Serial.print(" ");
-    Serial.print(f1);
-    Serial.print(" ");
-    Serial.print(f2);
-    Serial.print("\n");
-    */
+    // Uncomment these to print stats for testing
+    //Serial.print(t);
+    //Serial.print(" ");
+    //Serial.print(Vlv);
+    //Serial.print(" ");
+    //Serial.println(Pa);
+    //Serial.print(" ");
+    //Serial.print(fv);
+    //Serial.print(" ");
+    //Serial.print(f1);
+    //Serial.print(" ");
+    //Serial.print(f2);
+    //Serial.print("\n");
 
     // Arduino stuff (not related to model)
 
     // Number of heartbeats
     int prevNum = heartbeatNum;
-    heartbeatNum = (int) floor(simSteps * dt) % 10;
+    heartbeatNum = (int) floor(simSteps * dt / trr) % 10;
     if (heartbeatNum != prevNum) {
         startBeep();
         writeNumber(heartbeatNum, 20);
@@ -227,9 +309,9 @@ uint32_t getColorFromPressure(float pressure, int intensity) {
     return strip.Color(intensity * redValue, 0, intensity * blueValue);
 }
 
-/**
- * Maps a number in the specified "from" range to the "to" range (e.g. mapping 0.5 from the range [0, 1]
- * to the range [0, 10] returns 5.0). 
+/** 
+ * Maps a number in the specified "from" range to the "to" range (e.g. mapping
+ * 0.5 from the range [0, 1] to the range [0, 10] returns 5.0). 
  */
 float mapf(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
     // Map to 0.0 to 1.0 (inclusive)
