@@ -224,7 +224,7 @@ void loop() {
 
     // Number of heartbeats
     int prevNum = heartbeatNum;
-    heartbeatNum = (int) floor(simSteps * dt) % 10;
+    heartbeatNum = (int) floor(simSteps * dt / trr) % 10;
     if (heartbeatNum != prevNum) {
         startBeep();
         writeNumber(heartbeatNum, 20);
