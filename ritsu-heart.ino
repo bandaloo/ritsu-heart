@@ -25,6 +25,8 @@
 #define MIN_PRESSURE 4.0
 #define MAX_PRESSURE 13.0
 
+#define TIME_SCALAR 0.1
+
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 // Argument 1 = Number of pixels in NeoPixel strip
@@ -43,17 +45,17 @@ double timeLED = 0;
 
 // things for the model (all times in seconds)
 double Vlv = 100.0;
-double Pa = 80.0;
+double Pa = 80.0; 
 
 double Pv = 10.0; // we can change this
 double Po = 10.0;
-double Rv = 0.01;
-double R0 = 0.005;
-double R = 1.0; // we can change this
-double C = 5.0; // we can change this
+double Rv = 0.01; // changes when you have a disease
+double R0 = 0.005; // resistance in the aorta
+double R = 1.0; // we can change this (changes with temperature)
+double C = 5.0; // we can change this (reduces with age, assuming this is aortic)
 
 double maxtime = 1.0;
-double dt = 0.001;
+double dt = 0.001; 
 double trr = 1.0;
 double ts;
 double es = 1.0;
@@ -63,8 +65,37 @@ double e;
 int i;
 int maxstep;
 double t;
-
 // end of things for the model
+
+// scenario struct for changing all settings at once
+typedef struct scenario {
+    char * name;
+    double inC;
+    double inR;
+    double inPv;
+    double intrr;
+    double inR0;
+    double inRv;
+} Scenario;
+
+Scenario scenarios[] {
+    {.name = "resting", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
+    {.name = "old", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
+    {.name = "sick", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
+    {.name = "running", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
+    {.name = "cold", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0},
+    {.name = "warm", .inC = 0, .inR = 0, .inPv = 0, .intrr = 0, .inR0 = 0, .inRv = 0}
+};
+
+// set scenario
+void setScenario(int i) {
+    C = scenarios[i].inC;
+    R = scenarios[i].inR;
+    Pv = scenarios[i].inPv;
+    trr = scenarios[i].intrr;
+    R0 = scenarios[i].inR0;
+    Rv = scenarios[i].inRv;
+}
 
 /**
  * Runs once at startup.
@@ -92,7 +123,8 @@ void loop() {
     double f2;
 
     // E(t)の計算 (calculation)
-    for (int i = 0; i < FRAME_DELAY / dt; i++) {
+    for (int i = 0; i < FRAME_DELAY * TIME_SCALAR / dt; i++) {
+    //for (int i = 0; i < 2; i++) {
         t = fmod(simSteps * dt, trr);
         simSteps++;
         if (t < ts) {
@@ -115,6 +147,7 @@ void loop() {
         Pa += (f1 - f2) * e * dt;
     }
 
+    // Uncomment these to print stats for testing
     /*
     Serial.print(t);
     Serial.print(" ");
@@ -134,6 +167,7 @@ void loop() {
 
     // Number of heartbeats
     writeNumber((int) floor(simSteps * dt) % 10, 20);
+    Serial.println(simSteps * dt);
 
     // Animate blood flow according to model
     bloodFlowLED(Pa, f1);
@@ -194,9 +228,9 @@ uint32_t getColorFromPressure(float pressure, int intensity) {
     return strip.Color(intensity * redValue, 0, intensity * blueValue);
 }
 
-/**
- * Maps a number in the specified "from" range to the "to" range (e.g. mapping 0.5 from the range [0, 1]
- * to the range [0, 10] returns 5.0). 
+/** 
+ * Maps a number in the specified "from" range to the "to" range (e.g. mapping
+ * 0.5 from the range [0, 1] to the range [0, 10] returns 5.0). 
  */
 float mapf(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
     // Map to 0.0 to 1.0 (inclusive)
