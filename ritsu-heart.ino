@@ -164,11 +164,6 @@ void loop() {
     if (timeLeftInFrame >= 0) {
         // Delay for the remainder of FRAME_DELAY
         delay(timeLeftInFrame * 1000); // delay() takes milliseconds
-    } else {
-        // Don't delay, program is lagging behind
-        Serial.print("WARNING: Simulation ran ");
-        Serial.print(timeLeftInFrame);
-        Serial.println("ms too long this frame.");
     }
 }
 
@@ -179,15 +174,20 @@ void loop() {
  */
 void bloodFlowLED(float pressure, float spd) {
     // Frequency of light wave effect
-    float sinFreq = 0.2;
+    float sinFreq = 0.15;
+
+    // Gaps between "worms" in blood flow visualization (0 is no gap)
+    float wormGapScale = 0.7;
 
     // Update time
     float minLightSpd = 0;
-    float maxLightSpd = 25;
+    float maxLightSpd = 21;    
     timeLED += mapf(spd, MIN_SPD, MAX_SPD, minLightSpd, maxLightSpd) * deltaTime;
 
+    // Draw pattern
     for (int i = 0; i < LED_COUNT; i++) {
-        uint32_t intensity = floor(127.0 * sin(sinFreq * (2 * PI) * i + timeLED) + 127.0);
+        double sineValue = sin(sinFreq * (2 * PI) * i + timeLED);
+        uint32_t intensity = (int)clamp(mapf(sineValue, -1.0, 1.0, wormGapScale * -255, 255), 0, 255);
         strip.setPixelColor(i, getColorFromPressure(pressure, intensity));
     }
 
@@ -233,12 +233,12 @@ uint32_t getColorFromPressure(float pressure, int intensity) {
  */
 float mapf(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
     // Map to 0.0 to 1.0 (inclusive)
-    float rangeLow = fromHigh - fromLow;
-    value = (value - fromLow) / rangeLow;
+    float fromRange = fromHigh - fromLow;
+    value = (value - fromLow) / fromRange;
 
     // Map to toLow to toHigh (inclusive)
-    float rangeHigh = toHigh - toLow;
-    value = value * rangeHigh + toLow;
+    float toRange = toHigh - toLow;
+    value = value * toRange + toLow;
 
     return value;
 }
