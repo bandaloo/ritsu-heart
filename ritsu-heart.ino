@@ -262,9 +262,9 @@ void bloodFlowLED(float pressure, float spd) {
     float wormGapScale = 0.7;
 
     // Update time
-    float minLightSpd = 0;
-    float maxLightSpd = 21;    
-    timeLED += mapf(spd, MIN_SPD, MAX_SPD, minLightSpd, maxLightSpd) * deltaTime;
+    float ledSpeedScale = 0.1f;
+    float scaledSpeed = spd * ledSpeedScale;
+    timeLED += (scaledSpeed > 0 ? scaledSpeed : 0) * deltaTime;
 
     // Draw pattern
     for (int i = 0; i < LED_COUNT; i++) {
