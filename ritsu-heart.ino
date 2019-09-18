@@ -89,6 +89,7 @@ void setup() {
 }
 
 long simSteps = 0;
+int heartbeatNum = 0;
 
 /**
  * Runs repeatedly as fast as the board can execute it, like a while(1) loop.
@@ -140,7 +141,12 @@ void loop() {
     // Arduino stuff (not related to model)
 
     // Number of heartbeats
-    writeNumber((int) floor(simSteps * dt) % 10, 20);
+    int prevNum = heartbeatNum;
+    heartbeatNum = (int) floor(simSteps * dt) % 10;
+    if (heartbeatNum != prevNum) {
+        startBeep();
+        writeNumber(heartbeatNum, 20);
+    }
 
     // Animate blood flow according to model
     bloodFlowLED(Pa, f1);
