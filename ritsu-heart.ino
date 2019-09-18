@@ -13,25 +13,17 @@
 #include <avr/power.h>  // Required for 16 MHz Adafruit Trinket
 #endif
 
-// Analog pin for reading flow rate potentiometer value
-#define FLOW_RATE_POT_PIN 1
-
-// Analog pin for reading pressure potentiometer value
-#define PRESSURE_POT_PIN 2
-
-// Analog read range
-#define ANALOG_RANGE 1023
+#define FRAME_DELAY 0.01
 
 // NeoPixels
 #define LED_PIN 12
 #define LED_COUNT 8
-#define LED_DELAY 5
 
 // Blood flow constants
-#define MIN_SPD 0.003
-#define MAX_SPD 0.035
-#define MIN_PRESSURE 1.0
-#define MAX_PRESSURE 2.0
+#define MIN_SPD -200
+#define MAX_SPD 100
+#define MIN_PRESSURE 4.0
+#define MAX_PRESSURE 13.0
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -44,14 +36,43 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
-float prevTime = 0;
-float deltaTime;
-float timeLED = 0;
+// Loop/animation timing variables (in seconds)
+double prevTime = 0;
+double deltaTime = 0;
+double timeLED = 0;
+
+// things for the model (all times in seconds)
+double Vlv = 100.0;
+double Pa = 80.0;
+
+double Pv = 10.0; // we can change this
+double Po = 10.0;
+double Rv = 0.01;
+double R0 = 0.005;
+double R = 1.0; // we can change this
+double C = 5.0; // we can change this
+
+double maxtime = 1.0;
+double dt = 0.001;
+double trr = 1.0;
+double ts;
+double es = 1.0;
+double ed = 0.1;
+double e;
+
+int i;
+int maxstep;
+double t;
+
+// end of things for the model
 
 /**
  * Runs once at startup.
  */
 void setup() {
+    ts = 0.3 * sqrt(trr);
+    maxstep = maxtime / dt;
+
     setupDigit(20); // run setup for the first motor
     Serial.begin(9600); // Need this to write to the console (Serial monitor)
 
@@ -60,29 +81,79 @@ void setup() {
     strip.setBrightness(50);  // Set BRIGHTNESS to about 1/5 (max = 255)
 }
 
+long simSteps = 0;
+
 /**
  * Runs repeatedly as fast as the board can execute it, like a while(1) loop.
  */
 void loop() {
-    float currentTime = millis();
-    deltaTime = currentTime - prevTime;
-    prevTime = currentTime;
-    // Read pot voltage and map to an appropriate speed for the blood flow rate
-    float pinValue = analogRead(FLOW_RATE_POT_PIN);
-    float bloodSpeed = mapf(pinValue, 0, ANALOG_RANGE, MIN_SPD, MAX_SPD);
+    double fv;
+    double f1;
+    double f2;
 
-    // Read pot voltage and map to an appropriate pressure for the blood coloration
-    pinValue = analogRead(PRESSURE_POT_PIN);
-    float bloodPressure = mapf(pinValue, 0, ANALOG_RANGE, MIN_PRESSURE, MAX_PRESSURE);
+    // E(t)の計算 (calculation)
+    for (int i = 0; i < FRAME_DELAY / dt; i++) {
+        t = fmod(simSteps * dt, trr);
+        simSteps++;
+        if (t < ts) {
+            e = ed + (es - ed)/2.0 * (1.0 - cos(M_PI * t / (0.3 * sqrt(trr))));
+        } else if (t < (ts * 3.0 / 2.0)) {
+            e = ed + (es - ed)/2.0 * (1.0 + cos(2.0 * M_PI * (t - 0.3 * sqrt(trr)) / (0.3 * sqrt(trr))));
+        } else {
+            e = ed;
+        }
 
-    // first number
-    writeNumber(map(pinValue, 0, ANALOG_RANGE, 0, 10), 20);
-    //writeNumber(8, 20);
-    //Test blood flow light effect
-    bloodFlowLED(bloodPressure, bloodSpeed);
+        double Plv = e * Vlv;
+        
+        // fv, f1, f2
+        fv = (Pv - Plv) / Rv;
+        f1 = (Plv - Pa) / R0;
+        f2 = (Pa - Po) / R;
+        
+        // Vlv, Pa
+        Vlv += (fv - f1) * dt;
+        Pa += (f1 - f2) * e * dt;
+    }
 
-    // Example light functions
-    delay(LED_DELAY);
+    /*
+    Serial.print(t);
+    Serial.print(" ");
+    Serial.print(Vlv);
+    Serial.print(" ");
+    Serial.print(Pa);
+    Serial.print(" ");
+    Serial.print(fv);
+    Serial.print(" ");
+    Serial.print(f1);
+    Serial.print(" ");
+    Serial.print(f2);
+    Serial.print("\n");
+    */
+
+    // Arduino stuff (not related to model)
+
+    // Number of heartbeats
+    writeNumber((int) floor(simSteps * dt) % 10, 20);
+
+    // Animate blood flow according to model
+    bloodFlowLED(Pa, f1);
+
+    // Loop timing
+    double curTime = micros() / 1000000.0;
+    deltaTime = curTime - prevTime;
+    prevTime = curTime;
+
+    // Loop timing stuff
+    double timeLeftInFrame = FRAME_DELAY - deltaTime;
+    if (timeLeftInFrame >= 0) {
+        // Delay for the remainder of FRAME_DELAY
+        delay(timeLeftInFrame * 1000); // delay() takes milliseconds
+    } else {
+        // Don't delay, program is lagging behind
+        Serial.print("WARNING: Simulation ran ");
+        Serial.print(timeLeftInFrame);
+        Serial.println("ms too long this frame.");
+    }
 }
 
 float clamp(float n, float lo, float hi) {
@@ -91,16 +162,17 @@ float clamp(float n, float lo, float hi) {
 
 /** 
  * Creates a "blood flow" light design with on the given strip with the given
- * pressure (kPa) and speed (independent of LED_DELAY). Call in a loop to
+ * pressure (kPa) and speed (independent of FRAME_DELAY). Call in a loop to
  * animate.
  */
 void bloodFlowLED(float pressure, float spd) {
     // Frequency of light wave effect
-    float sinFreq = 0.07;
+    float sinFreq = 0.2;
 
     // Update time
-
-    timeLED += spd * deltaTime;
+    float minLightSpd = 0;
+    float maxLightSpd = 25;
+    timeLED += mapf(spd, MIN_SPD, MAX_SPD, minLightSpd, maxLightSpd) * deltaTime;
 
     for (int i = 0; i < LED_COUNT; i++) {
         uint32_t intensity = floor(127.0 * sin(sinFreq * (2 * PI) * i + timeLED) + 127.0);
@@ -115,6 +187,7 @@ void bloodFlowLED(float pressure, float spd) {
  * Returns a color that represents the given pressure.
  */
 uint32_t getColorFromPressure(float pressure, int intensity) {
+    pressure = clamp(pressure, MIN_PRESSURE, MAX_PRESSURE);
     float redValue = mapf(pressure, MIN_PRESSURE, MAX_PRESSURE, 0.0, 1.0);
     float blueValue = 1.0 - redValue;
 

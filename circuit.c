@@ -34,7 +34,7 @@
     
     for (i = 0; i < maxstep; i++) {
         
-        // E(t)の計算
+        // E(t)の計算 (calculation)
         t = fmod(i * dt, trr);
         if (t < ts) {
             e = ed + (es - ed)/2.0 * (1.0 - cos(M_PI * t / (0.3 * sqrt(trr))));
