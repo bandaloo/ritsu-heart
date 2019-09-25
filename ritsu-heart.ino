@@ -243,6 +243,7 @@ void loop() {
 
     // Animate blood flow according to model
     bloodFlowLED(strip_f1, Pa, f1);
+    bloodFlowLED(strip_fv, Pv, fv);
 
     // Step buzzer so it turns off after BEEP_DURATION
     stepBeep();
