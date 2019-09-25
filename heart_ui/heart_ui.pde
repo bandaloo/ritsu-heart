@@ -12,7 +12,7 @@ void setup(){ //same as arduino program
   
   printArray(Serial.list());
   
-  port = new Serial(this, "COM3", 9600);
+  port = new Serial(this, "COM9", 9600);
 
   cp5 = new ControlP5(this);
   
