@@ -192,6 +192,12 @@ void loop() {
     double f1;
     double f2;
 
+    if(Serial.available())
+    {
+      int val = Serial.read();
+      setScenario(val);
+    }
+
     // E(t)の計算 (calculation)
     for (int i = 0; i < FRAME_DELAY * TIME_SCALAR / dt; i++) {
     //for (int i = 0; i < 2; i++) {
