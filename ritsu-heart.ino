@@ -19,6 +19,11 @@
 #define LED_PIN 12
 #define LED_COUNT 8
 
+// NeoPixels
+#define LED_PIN_1 13
+#define LED_COUNT_1 8
+
+
 // Pins
 #define BUZZER_PIN 53
 
@@ -35,7 +40,8 @@
 #define BEEP_DURATION 0.15
 
 // Declare our NeoPixel strip object:
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip_f1(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip_fv(LED_COUNT_1, LED_PIN_1, NEO_GRB + NEO_KHZ800);
 // Argument 1 = Number of pixels in NeoPixel strip
 // Argument 2 = Arduino pin number (most are valid)
 // Argument 3 = Pixel type flags, add together as needed:
@@ -44,6 +50,7 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
+
 
 // Loop/animation timing variables (in seconds)
 double prevTime = 0;
@@ -163,9 +170,13 @@ void setup() {
 
     setupDigit(20); // run setup for the first motor
 
-    strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
-    strip.show();             // Turn OFF all pixels ASAP
-    strip.setBrightness(50);  // Set BRIGHTNESS to about 1/5 (max = 255)
+    strip_f1.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
+    strip_f1.show();             // Turn OFF all pixels ASAP
+    strip_f1.setBrightness(50);  // Set BRIGHTNESS to about 1/5 (max = 255)
+
+    strip_fv.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
+    strip_fv.show();             // Turn OFF all pixels ASAP
+    strip_fv.setBrightness(50);  // Set BRIGHTNESS to about 1/5 (max = 255)
 
     pinMode(BUZZER_PIN, OUTPUT); // Setup buzzer for digital control
 }
@@ -231,7 +242,7 @@ void loop() {
     }
 
     // Animate blood flow according to model
-    bloodFlowLED(Pa, f1);
+    bloodFlowLED(strip_f1, Pa, f1);
 
     // Step buzzer so it turns off after BEEP_DURATION
     stepBeep();
@@ -254,7 +265,7 @@ void loop() {
  * pressure (kPa) and speed (independent of FRAME_DELAY). Call in a loop to
  * animate.
  */
-void bloodFlowLED(float pressure, float spd) {
+void bloodFlowLED(Adafruit_NeoPixel& strip, float pressure, float spd) {
     // Frequency of light wave effect
     float sinFreq = 0.15;
 
@@ -270,7 +281,7 @@ void bloodFlowLED(float pressure, float spd) {
     for (int i = 0; i < LED_COUNT; i++) {
         double sineValue = sin(sinFreq * (2 * PI) * i + timeLED);
         uint32_t intensity = (int)clamp(mapf(sineValue, -1.0, 1.0, wormGapScale * -255, 255), 0, 255);
-        strip.setPixelColor(i, getColorFromPressure(pressure, intensity));
+        strip.setPixelColor(i, getColorFromPressure(strip, pressure, intensity));
     }
 
     // Write the set values to the real-world LEDs
@@ -286,7 +297,8 @@ void bloodFlowLED(float pressure, float spd) {
  }
 
 /**
- * Decrements the beep timer and turns off the buzzer if it has been playing for BEEP_DURATION seconds
+ * Decrements the beep timer and turns off the buzzer if it has been playing
+ * for BEEP_DURATION seconds
  */
 void stepBeep() {
     // Decrement beep timer
@@ -301,7 +313,7 @@ void stepBeep() {
 /**
  * Returns a color that represents the given pressure.
  */
-uint32_t getColorFromPressure(float pressure, int intensity) {
+uint32_t getColorFromPressure(Adafruit_NeoPixel& strip, float pressure, int intensity) {
     pressure = clamp(pressure, MIN_PRESSURE, MAX_PRESSURE);
     float redValue = mapf(pressure, MIN_PRESSURE, MAX_PRESSURE, 0.0, 1.0);
     float blueValue = 1.0 - redValue;
