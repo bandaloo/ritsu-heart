@@ -257,12 +257,11 @@ void loop() {
     // Number of heartbeats
     int prevNum = heartbeatNum;
     heartbeatNum = (int) floor(simSteps * dt / trr) % 10;
-    /*
+
     if (heartbeatNum != prevNum) {
         startBeep();
-        writeNumber(heartbeatNum, 20);
+        //writeNumber(heartbeatNum, 20);
     }
-    */
 
     // Animate blood flow according to model
     bloodFlowLED(strip_f1, Pa, f1, true);
