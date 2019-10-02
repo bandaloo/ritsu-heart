@@ -150,6 +150,8 @@ void setScenario(int i) {
     R0 = scenarios[i].inR0;
     Rv = scenarios[i].inRv;
 
+    writeNumber(i, 20);
+
     Serial.println(scenarios[i].name);
     Serial.println(C);
     Serial.println(R);
@@ -242,10 +244,12 @@ void loop() {
     // Number of heartbeats
     int prevNum = heartbeatNum;
     heartbeatNum = (int) floor(simSteps * dt / trr) % 10;
+    /*
     if (heartbeatNum != prevNum) {
         startBeep();
         writeNumber(heartbeatNum, 20);
     }
+    */
 
     // Animate blood flow according to model
     bloodFlowLED(strip_f1, Pa, f1);
