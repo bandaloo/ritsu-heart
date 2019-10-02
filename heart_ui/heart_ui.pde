@@ -9,7 +9,7 @@ PFont font;
 final int borderTop = 50;
 final int borderSide = 25;
 final int screenWidth = 300;
-final int screenHeight = 550;
+final int screenHeight = 650;
 final int nl = 10;
 String modeStr = "PICK A PORT";
 
@@ -59,6 +59,13 @@ void addButtons() {
 void update() {
 }
 
+void barDraw(float value, int x, int y) {
+ int barWidth = 20;
+ float changeRate = 0.5;
+ rectMode(CORNERS);
+ rect(x, y - value * changeRate, x + barWidth, y);
+}
+
 void draw(){  //same as loop in arduino
 
   background(150, 0 , 150); 
@@ -86,6 +93,8 @@ void draw(){  //same as loop in arduino
   }
   text(f1, screenWidth / 2, 40);
   text(fv, screenWidth / 2, 60);
+  barDraw(float(f1), 50, 400);
+  barDraw(float(fv), 100, 400);
 }
 
 void rest(){
