@@ -6,40 +6,54 @@ Serial port;
 ControlP5 cp5; //create ControlP5 object
 PFont font;
 
-void setup(){ //same as arduino program
+final int borderTop = 50;
+final int borderSide = 25;
+final int screenWidth = 300;
+final int screenHeight = 550;
 
+String modeStr = "PICK A PORT";
+
+ArrayList<Button> portButtons;
+ArrayList<Button> controlButtons;
+
+void setup(){ //same as arduino program
+  portButtons = new ArrayList<Button>();
+  controlButtons = new ArrayList<Button>();
+  
   size(300, 550);
-  
   printArray(Serial.list());
-  
-  port = new Serial(this, "COM9", 9600);
 
   cp5 = new ControlP5(this);
+  //addPortButtons();
+  addButtons();
   
-  cp5.addButton("rest") 
-    .setPosition(100, 50) 
-    .setSize(120, 70)    
-  ;   
+  //String portName = "change this";
+  //port = new Serial(this, portName, 9600);
+}
 
-  cp5.addButton("old")   
-    .setPosition(100, 150) 
-    .setSize(120, 70)  
-  ;
+void addPortButtons() {
+  for (int i = 0; i < Serial.list().length; i++) {
+    Button button = cp5.addButton(Serial.list()[i]);
+    button.setPosition(25, borderTop + i * 50);
+    button.setSize(screenWidth - 2 * borderSide, 40);
+    portButtons.add(button);
+  }
+}
 
-  cp5.addButton("excercising")   
-    .setPosition(100, 250)
-    .setSize(120, 70)     
-  ;
+void addButtons() {
+  String[] nameList = {"rest", "old", "exercising", "cold", "warm"};
   
-  cp5.addButton("cold")   
-    .setPosition(100, 350) 
-    .setSize(120, 70)   
-  ;
-  
-  cp5.addButton("warm")  
-    .setPosition(100, 450)  
-    .setSize(120, 70)     
-  ;
+  for (int i = 0; i < nameList.length; i++) {
+    Button button = cp5.addButton(nameList[i]);
+    button.setPosition(25, borderTop + i * 50);
+    button.setSize(screenWidth - 2 * borderSide, 40);
+    
+    //button.hide();
+    controlButtons.add(button);
+  }
+}
+
+void update() {
 }
 
 void draw(){  //same as loop in arduino
@@ -48,9 +62,9 @@ void draw(){  //same as loop in arduino
   
   //lets give title to our window
   fill(0, 255, 0);         
-  text("HEART CONTROL", 80, 30);  
+  textAlign(CENTER, BOTTOM);
+  text("HEART CONTROL", screenWidth / 2, 30);  
 }
-
 
 void rest(){
   port.write(0);
