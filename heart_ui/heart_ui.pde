@@ -30,7 +30,7 @@ void setup(){ //same as arduino program
   //addPortButtons();
   addButtons();
   
-  String portName = "/dev/cu.usbmodem14411";
+  String portName = "/dev/cu.usbmodem145101";
   port = new Serial(this, portName, 9600);
 }
 
@@ -50,6 +50,8 @@ void addButtons() {
     Button button = cp5.addButton(nameList[i]);
     button.setPosition(25, borderTop + i * 50);
     button.setSize(screenWidth - 2 * borderSide, 40);
+    button.setColorBackground(color(225, 28, 34));
+    button.setColorForeground(color(168, 20, 25));
     
     //button.hide();
     controlButtons.add(button);
@@ -61,10 +63,8 @@ void update() {
 
 void draw(){  //same as loop in arduino
 
-  background(150, 0 , 150); 
+  background(255, 255 , 255); 
   
-  //lets give title to our window
-  fill(0, 255, 0);         
   textAlign(CENTER, BOTTOM);
   //text("HEART CONTROL", screenWidth / 2, 30);  
   
@@ -84,8 +84,10 @@ void draw(){  //same as loop in arduino
       }
     }
   }
-  text(f1, screenWidth / 2, 40);
-  text(fv, screenWidth / 2, 60);
+  fill(0, 0, 0);
+  textSize(15);
+  text("blood flow to body: " + f1.toString(), screenWidth / 2, 400);
+  text("blood flow into ventricles: " + fv.toString(), screenWidth / 2, 430);
 }
 
 void rest(){
