@@ -16,16 +16,16 @@
 #define FRAME_DELAY 0.01
 
 // NeoPixels
-#define LED_PIN 12
-#define LED_COUNT 8
+#define LED_PIN 14
+#define LED_COUNT 20
 
 // NeoPixels
-#define LED_PIN_1 13
-#define LED_COUNT_1 8
-
+#define LED_PIN_1 15
+#define LED_COUNT_1 20
 
 // Pins
 #define BUZZER_PIN 53
+#define PUMP_PIN 21
 
 // Blood flow constants
 #define MIN_SPD -200
@@ -55,11 +55,13 @@ Adafruit_NeoPixel strip_fv(LED_COUNT_1, LED_PIN_1, NEO_GRB + NEO_KHZ800);
 // Loop/animation timing variables (in seconds)
 double prevTime = 0;
 double deltaTime = 0;
-double timeLED = 0;
+double timeLED_1 = 0;
+double timeLED_v = 0;
 double timeBeep = BEEP_DURATION;
 
 // things for the model (all times in seconds)
 double Vlv = 100.0;
+double prevVlv = Vlv; // used to see if it went up or down
 double Pa = 80.0; 
 
 double Pv = 10.0; // we can change this
@@ -179,6 +181,7 @@ void setup() {
     strip_fv.setBrightness(50);  // Set BRIGHTNESS to about 1/5 (max = 255)
 
     pinMode(BUZZER_PIN, OUTPUT); // Setup buzzer for digital control
+    pinMode(PUMP_PIN, OUTPUT);   // Setup pump for digital control
 }
 
 long simSteps = 0;
@@ -199,6 +202,7 @@ void loop() {
     }
 
     // E(t)の計算 (calculation)
+    prevVlv = Vlv;
     for (int i = 0; i < FRAME_DELAY * TIME_SCALAR / dt; i++) {
     //for (int i = 0; i < 2; i++) {
         t = fmod(simSteps * dt, trr);
@@ -223,6 +227,14 @@ void loop() {
         Pa += (f1 - f2) * e * dt;
     }
 
+    if (prevVlv < Vlv) {
+        // make pump go
+        digitalWrite(PUMP_PIN, HIGH);
+    } else {
+        // make pump stop
+        digitalWrite(PUMP_PIN, LOW);
+    }
+
     // Uncomment these to print stats for testing
     //Serial.print(t);
     //Serial.print(" ");
@@ -230,12 +242,13 @@ void loop() {
     //Serial.print(" ");
     //Serial.println(Pa);
     //Serial.print(" ");
-    //Serial.print(fv);
+    Serial.print(fv);
     //Serial.print(" ");
-    //Serial.print(f1);
+    Serial.print("    ");
+    Serial.print(f1);
     //Serial.print(" ");
     //Serial.print(f2);
-    //Serial.print("\n");
+    Serial.print("\n");
 
     // Arduino stuff (not related to model)
 
@@ -248,8 +261,8 @@ void loop() {
     }
 
     // Animate blood flow according to model
-    bloodFlowLED(strip_f1, Pa, f1);
-    bloodFlowLED(strip_fv, Pv, fv);
+    bloodFlowLED(strip_f1, Pa, f1, true);
+    bloodFlowLED(strip_fv, Pv, fv, false);
 
     // Step buzzer so it turns off after BEEP_DURATION
     stepBeep();
@@ -272,7 +285,7 @@ void loop() {
  * pressure (kPa) and speed (independent of FRAME_DELAY). Call in a loop to
  * animate.
  */
-void bloodFlowLED(Adafruit_NeoPixel& strip, float pressure, float spd) {
+void bloodFlowLED(Adafruit_NeoPixel& strip, float pressure, float spd, bool isFirstStrip) {
     // Frequency of light wave effect
     float sinFreq = 0.15;
 
@@ -282,7 +295,16 @@ void bloodFlowLED(Adafruit_NeoPixel& strip, float pressure, float spd) {
     // Update time
     float ledSpeedScale = 0.1f;
     float scaledSpeed = spd * ledSpeedScale;
-    timeLED += (scaledSpeed > 0 ? scaledSpeed : 0) * deltaTime;
+
+    float timeLED;
+    if (isFirstStrip) {
+        timeLED_1 += (scaledSpeed > 0 ? scaledSpeed : 0) * deltaTime;
+        timeLED = timeLED_1;
+    } else {
+        timeLED_v += (scaledSpeed > 0 ? scaledSpeed : 0) * deltaTime;
+        timeLED = timeLED_v;
+    }
+
 
     // Draw pattern
     for (int i = 0; i < LED_COUNT; i++) {
