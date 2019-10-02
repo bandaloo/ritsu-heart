@@ -254,6 +254,7 @@ void loop() {
 
     Serial.println("f1=" + String(int(f1)));
     Serial.println("fv=" + String(int(fv)));
+    Serial.println("Vlv=" + String(int(Vlv)));
 
     // Arduino stuff (not related to model)
 
