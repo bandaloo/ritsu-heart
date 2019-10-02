@@ -65,24 +65,27 @@ double prevVlv = Vlv; // used to see if it went up or down
 double Pa = 80.0; 
 
 double Pv = 10.0; // we can change this
-double Po = 10.0;
+const double Po = 10.0;
 double Rv = 0.01; // changes when you have a disease
-double R0 = 0.005; // resistance in the aorta
+double R0 = 0.005; // we can change this (resistance in the aorta)
 double R = 1.0; // we can change this (changes with temperature)
 double C = 5.0; // we can change this (reduces with age, assuming this is aortic)
 
-double maxtime = 1.0;
-double dt = 0.001; 
+const double maxtime = 1.0;
+const double dt = 0.001; 
 double trr = 1.0;
 double ts;
-double es = 1.0;
-double ed = 0.1;
+const double es = 1.0;
+const double ed = 0.1;
 double e;
 
-int i;
 int maxstep;
 double t;
 // end of things for the model
+
+// for running the simulation
+long simSteps = 0;
+int heartbeatNum = 0;
 
 // scenario struct for changing all settings at once
 typedef struct scenario {
@@ -143,6 +146,15 @@ Scenario scenarios[] {
     }
 };
 
+void resetSim() {
+    timeLED_1 = 0;
+    timeLED_v = 0;
+    simSteps = 0;
+    heartbeatNum;
+    Vlv = 100;
+    prevVlv = Vlv;
+}
+
 // set scenario
 void setScenario(int i) {
     C = scenarios[i].inC;
@@ -161,6 +173,8 @@ void setScenario(int i) {
     Serial.println(trr);
     Serial.println(R0);
     Serial.println(Rv);
+
+    resetSim();
 }
 
 /**
@@ -185,9 +199,6 @@ void setup() {
     pinMode(BUZZER_PIN, OUTPUT); // Setup buzzer for digital control
     pinMode(PUMP_PIN, OUTPUT);   // Setup pump for digital control
 }
-
-long simSteps = 0;
-int heartbeatNum = 0;
 
 /**
  * Runs repeatedly as fast as the board can execute it, like a while(1) loop.
