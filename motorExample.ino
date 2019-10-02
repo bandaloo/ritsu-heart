@@ -15,12 +15,14 @@ void setupMotor() {
 // this function takes the speed to spin the motor
 // max speed = 255
 // min speed = 1 - i think
+/*
 void startMotor(int speed){
     //forward @ full speed
     digitalWrite(13, HIGH); //Establishes forward jirection of Channel B
     digitalWrite(8, LOW); // Disengage the Brake for Channel B
     analogWrite(11, speed); // Spins the motor on Channel B at full speed
 }
+*/
 
 
 /*
