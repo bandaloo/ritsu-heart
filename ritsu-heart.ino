@@ -244,13 +244,16 @@ void loop() {
     //Serial.print(" ");
     //Serial.println(Pa);
     //Serial.print(" ");
-    Serial.print(fv);
+    //Serial.print(fv);
     //Serial.print(" ");
-    Serial.print("    ");
-    Serial.print(f1);
+    //Serial.print("    ");
+    //Serial.print(f1);
     //Serial.print(" ");
     //Serial.print(f2);
-    Serial.print("\n");
+    //Serial.print("\n");
+
+    Serial.println("f1=" + String(int(f1)));
+    Serial.println("fv=" + String(int(fv)));
 
     // Arduino stuff (not related to model)
 

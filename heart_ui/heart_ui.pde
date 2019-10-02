@@ -10,11 +10,14 @@ final int borderTop = 50;
 final int borderSide = 25;
 final int screenWidth = 300;
 final int screenHeight = 550;
-
+final int nl = 10;
 String modeStr = "PICK A PORT";
 
 ArrayList<Button> portButtons;
 ArrayList<Button> controlButtons;
+
+String f1 = "";
+String fv = "";
 
 void setup(){ //same as arduino program
   portButtons = new ArrayList<Button>();
@@ -27,7 +30,7 @@ void setup(){ //same as arduino program
   //addPortButtons();
   addButtons();
   
-  String portName = "/dev/cu.usbmodem144101";
+  String portName = "/dev/cu.usbmodem14411";
   port = new Serial(this, portName, 9600);
 }
 
@@ -63,7 +66,26 @@ void draw(){  //same as loop in arduino
   //lets give title to our window
   fill(0, 255, 0);         
   textAlign(CENTER, BOTTOM);
-  text("HEART CONTROL", screenWidth / 2, 30);  
+  //text("HEART CONTROL", screenWidth / 2, 30);  
+  
+  while(port.available() > 0){
+    String myString = port.readStringUntil(nl);
+    if(myString != null){
+      String[] values = myString.split("=");
+      if (values.length >= 2) {
+        if (values[0].equals( "f1")) {
+          f1 = values[1];
+          //text(values[1], screenWidth / 2, 30);
+        }
+        if (values[0].equals( "fv")) {
+          //text(values[1], screenWidth / 2, 60);
+          fv = values[1];
+        }
+      }
+    }
+  }
+  text(f1, screenWidth / 2, 40);
+  text(fv, screenWidth / 2, 60);
 }
 
 void rest(){
