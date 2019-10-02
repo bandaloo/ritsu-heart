@@ -36,7 +36,7 @@
 
 #define TIME_SCALAR 0.1
 
-#define DEFAULT_SCENARIO 2
+#define DEFAULT_SCENARIO 0
 #define BEEP_DURATION 0.15
 
 // Declare our NeoPixel strip object:
@@ -150,9 +150,10 @@ void resetSim() {
     timeLED_1 = 0;
     timeLED_v = 0;
     simSteps = 0;
-    heartbeatNum;
+    heartbeatNum = 0;
     Vlv = 100;
     prevVlv = Vlv;
+    ts = 0.3 * sqrt(trr);
 }
 
 // set scenario
@@ -183,7 +184,7 @@ void setScenario(int i) {
 void setup() {
     Serial.begin(9600); // Need this to write to the console (Serial monitor)
     setScenario(DEFAULT_SCENARIO);
-    ts = 0.3 * sqrt(trr);
+    //ts = 0.3 * sqrt(trr);
     maxstep = maxtime / dt;
 
     setupDigit(20); // run setup for the first motor
