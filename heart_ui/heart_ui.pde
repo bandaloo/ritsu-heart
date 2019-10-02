@@ -27,8 +27,8 @@ void setup(){ //same as arduino program
   //addPortButtons();
   addButtons();
   
-  //String portName = "change this";
-  //port = new Serial(this, portName, 9600);
+  String portName = "/dev/cu.usbmodem144101";
+  port = new Serial(this, portName, 9600);
 }
 
 void addPortButtons() {
