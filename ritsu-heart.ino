@@ -34,9 +34,9 @@
 #define MIN_PRESSURE 0.0 // used to be 4.0
 #define MAX_PRESSURE 20.0 // used to be 13.0
 
-#define TIME_SCALAR 0.1
+#define TIME_SCALAR 1.0 // used to be 0.1
 
-#define DEFAULT_SCENARIO 2
+#define DEFAULT_SCENARIO 4
 #define BEEP_DURATION 0.15
 
 // Declare our NeoPixel strip object:
@@ -65,24 +65,28 @@ double prevVlv = Vlv; // used to see if it went up or down
 double Pa = 80.0; 
 
 double Pv = 10.0; // we can change this
-double Po = 10.0;
+const double Po = 10.0;
 double Rv = 0.01; // changes when you have a disease
-double R0 = 0.005; // resistance in the aorta
+double R0 = 0.005; // we can change this (resistance in the aorta)
 double R = 1.0; // we can change this (changes with temperature)
 double C = 5.0; // we can change this (reduces with age, assuming this is aortic)
+// TODO why doesn't C ever get used???
 
-double maxtime = 1.0;
-double dt = 0.001; 
+const double maxtime = 1.0;
+const double dt = 0.001; 
 double trr = 1.0;
 double ts;
-double es = 1.0;
-double ed = 0.1;
+const double es = 1.0;
+const double ed = 0.1;
 double e;
 
-int i;
 int maxstep;
 double t;
 // end of things for the model
+
+// for running the simulation
+long simSteps = 0;
+int heartbeatNum = 0;
 
 // scenario struct for changing all settings at once
 typedef struct scenario {
@@ -95,6 +99,8 @@ typedef struct scenario {
     double inRv;
 } Scenario;
 
+// TODO is it okay to change R0 and Rv?
+// things that don't do anything much: C, R
 Scenario scenarios[] {
     {
         .name = "rest",
@@ -105,16 +111,18 @@ Scenario scenarios[] {
         .inR0 = 0.005,
         .inRv = 0.01
     },
-    {
+    { // should be pretty red
         .name = "old",
-        .inC = 15.0, // higher compliance
-        .inR = 10.5, // higher resistance
+        .inC = 15.0, // higher compliance (used to be 15.0)
+        .inR = 1000.0, // higher resistance (used to be 10.5)
         .inPv = 10.0,
         .intrr = 1.0,
         .inR0 = 0.005,
+        //.inR0 = 0.105,
         .inRv = 0.01
+        //.inRv = 0.1
     },
-    {
+    { // should be pretty red
         .name = "exercising",
         .inC = 5.0,
         .inR = 1.0,
@@ -123,25 +131,35 @@ Scenario scenarios[] {
         .inR0 = 0.005,
         .inRv = 0.01
     },
-    {
+    { // should be pretty red
         .name = "cold",
         .inC = 5.0,
-        .inR = 1.5, // higher resistance
+        .inR = 3.0, // higher resistance (used to be 1.5)
         .inPv = 10.0,
         .intrr = 1.0,
         .inR0 = 0.005,
         .inRv = 0.01
     },
-    {
+    { // should be pretty blue
         .name = "warm",
         .inC = 5.0,
-        .inR = 0.5, // lower resistance
+        .inR = 0.01, // lower resistance (used to be 0.5)
         .inPv = 10.0,
         .intrr = 1.0,
         .inR0 = 0.005,
         .inRv = 0.01
     }
 };
+
+void resetSim() {
+    timeLED_1 = 0;
+    timeLED_v = 0;
+    simSteps = 0;
+    heartbeatNum = 0;
+    Vlv = 100;
+    prevVlv = Vlv;
+    ts = 0.3 * sqrt(trr);
+}
 
 // set scenario
 void setScenario(int i) {
@@ -161,6 +179,8 @@ void setScenario(int i) {
     Serial.println(trr);
     Serial.println(R0);
     Serial.println(Rv);
+
+    resetSim();
 }
 
 /**
@@ -169,7 +189,7 @@ void setScenario(int i) {
 void setup() {
     Serial.begin(9600); // Need this to write to the console (Serial monitor)
     setScenario(DEFAULT_SCENARIO);
-    ts = 0.3 * sqrt(trr);
+    //ts = 0.3 * sqrt(trr);
     maxstep = maxtime / dt;
 
     setupDigit(20); // run setup for the first motor
@@ -185,9 +205,6 @@ void setup() {
     pinMode(BUZZER_PIN, OUTPUT); // Setup buzzer for digital control
     pinMode(PUMP_PIN, OUTPUT);   // Setup pump for digital control
 }
-
-long simSteps = 0;
-int heartbeatNum = 0;
 
 /**
  * Runs repeatedly as fast as the board can execute it, like a while(1) loop.
@@ -222,7 +239,7 @@ void loop() {
         // fv, f1, f2
         fv = (Pv - Plv) / Rv;
         f1 = (Plv - Pa) / R0;
-        f2 = (Pa - Po) / R;
+        f2 = (Pa - Po) / R; // R -> inf, f2 -> 0
         
         // Vlv, Pa
         Vlv += (fv - f1) * dt;
@@ -242,7 +259,8 @@ void loop() {
     //Serial.print(" ");
     //Serial.print(Vlv);
     //Serial.print(" ");
-    //Serial.println(Pa);
+    Serial.println("Pa"+String(Pa));
+    Serial.println("f2"+String(f2));
     //Serial.print(" ");
     //Serial.print(fv);
     //Serial.print(" ");
@@ -250,10 +268,11 @@ void loop() {
     //Serial.print(f1);
     //Serial.print(" ");
     //Serial.print(f2);
-    //Serial.print("\n");
+    Serial.print("\n");
 
     Serial.println("f1=" + String(int(f1)));
     Serial.println("fv=" + String(int(fv)));
+    Serial.println("Vlv=" + String(int(Vlv)));
 
     // Arduino stuff (not related to model)
 
