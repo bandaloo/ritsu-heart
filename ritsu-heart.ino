@@ -16,11 +16,11 @@
 #define FRAME_DELAY 0.01
 
 // NeoPixels
-#define LED_PIN 14
+#define LED_PIN 15
 #define LED_COUNT 20
 
 // NeoPixels
-#define LED_PIN_1 15
+#define LED_PIN_1 14
 #define LED_COUNT_1 20
 
 // Pins
@@ -36,7 +36,7 @@
 
 #define TIME_SCALAR 1.0 // used to be 0.1
 
-#define DEFAULT_SCENARIO 4
+#define DEFAULT_SCENARIO 2
 #define BEEP_DURATION 0.15
 
 // Declare our NeoPixel strip object:
@@ -321,6 +321,9 @@ void bloodFlowLED(Adafruit_NeoPixel& strip, float pressure, float spd, bool isFi
     float ledSpeedScale = 0.1f;
     float scaledSpeed = spd * ledSpeedScale;
 
+    int iScalar = 1;
+    int iConstant = 0;
+
     float timeLED;
     if (isFirstStrip) {
         timeLED_1 += (scaledSpeed > 0 ? scaledSpeed : 0) * deltaTime;
@@ -328,6 +331,8 @@ void bloodFlowLED(Adafruit_NeoPixel& strip, float pressure, float spd, bool isFi
     } else {
         timeLED_v += (scaledSpeed > 0 ? scaledSpeed : 0) * deltaTime;
         timeLED = timeLED_v;
+        iScalar = -1;
+        iConstant = LED_COUNT - 1;
     }
 
 
@@ -335,7 +340,7 @@ void bloodFlowLED(Adafruit_NeoPixel& strip, float pressure, float spd, bool isFi
     for (int i = 0; i < LED_COUNT; i++) {
         double sineValue = sin(sinFreq * (2 * PI) * i + timeLED);
         uint32_t intensity = (int)clamp(mapf(sineValue, -1.0, 1.0, wormGapScale * -255, 255), 0, 255);
-        strip.setPixelColor(i, getColorFromPressure(strip, pressure, intensity));
+        strip.setPixelColor(i * iScalar + iConstant, getColorFromPressure(strip, pressure, intensity));
     }
 
     // Write the set values to the real-world LEDs
