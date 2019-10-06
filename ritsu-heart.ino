@@ -34,9 +34,9 @@
 #define MIN_PRESSURE 0.0 // used to be 4.0
 #define MAX_PRESSURE 20.0 // used to be 13.0
 
-#define TIME_SCALAR 0.1
+#define TIME_SCALAR 1.0 // used to be 0.1
 
-#define DEFAULT_SCENARIO 0
+#define DEFAULT_SCENARIO 4
 #define BEEP_DURATION 0.15
 
 // Declare our NeoPixel strip object:
@@ -70,6 +70,7 @@ double Rv = 0.01; // changes when you have a disease
 double R0 = 0.005; // we can change this (resistance in the aorta)
 double R = 1.0; // we can change this (changes with temperature)
 double C = 5.0; // we can change this (reduces with age, assuming this is aortic)
+// TODO why doesn't C ever get used???
 
 const double maxtime = 1.0;
 const double dt = 0.001; 
@@ -98,6 +99,8 @@ typedef struct scenario {
     double inRv;
 } Scenario;
 
+// TODO is it okay to change R0 and Rv?
+// things that don't do anything much: C, R
 Scenario scenarios[] {
     {
         .name = "rest",
@@ -108,16 +111,18 @@ Scenario scenarios[] {
         .inR0 = 0.005,
         .inRv = 0.01
     },
-    {
+    { // should be pretty red
         .name = "old",
-        .inC = 15.0, // higher compliance
-        .inR = 10.5, // higher resistance
+        .inC = 15.0, // higher compliance (used to be 15.0)
+        .inR = 1000.0, // higher resistance (used to be 10.5)
         .inPv = 10.0,
         .intrr = 1.0,
         .inR0 = 0.005,
+        //.inR0 = 0.105,
         .inRv = 0.01
+        //.inRv = 0.1
     },
-    {
+    { // should be pretty red
         .name = "exercising",
         .inC = 5.0,
         .inR = 1.0,
@@ -126,19 +131,19 @@ Scenario scenarios[] {
         .inR0 = 0.005,
         .inRv = 0.01
     },
-    {
+    { // should be pretty red
         .name = "cold",
         .inC = 5.0,
-        .inR = 1.5, // higher resistance
+        .inR = 3.0, // higher resistance (used to be 1.5)
         .inPv = 10.0,
         .intrr = 1.0,
         .inR0 = 0.005,
         .inRv = 0.01
     },
-    {
+    { // should be pretty blue
         .name = "warm",
         .inC = 5.0,
-        .inR = 0.5, // lower resistance
+        .inR = 0.01, // lower resistance (used to be 0.5)
         .inPv = 10.0,
         .intrr = 1.0,
         .inR0 = 0.005,
@@ -234,7 +239,7 @@ void loop() {
         // fv, f1, f2
         fv = (Pv - Plv) / Rv;
         f1 = (Plv - Pa) / R0;
-        f2 = (Pa - Po) / R;
+        f2 = (Pa - Po) / R; // R -> inf, f2 -> 0
         
         // Vlv, Pa
         Vlv += (fv - f1) * dt;
@@ -254,7 +259,8 @@ void loop() {
     //Serial.print(" ");
     //Serial.print(Vlv);
     //Serial.print(" ");
-    //Serial.println(Pa);
+    Serial.println("Pa"+String(Pa));
+    Serial.println("f2"+String(f2));
     //Serial.print(" ");
     //Serial.print(fv);
     //Serial.print(" ");
@@ -262,7 +268,7 @@ void loop() {
     //Serial.print(f1);
     //Serial.print(" ");
     //Serial.print(f2);
-    //Serial.print("\n");
+    Serial.print("\n");
 
     Serial.println("f1=" + String(int(f1)));
     Serial.println("fv=" + String(int(fv)));

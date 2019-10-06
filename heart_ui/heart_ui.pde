@@ -35,7 +35,7 @@ void setup(){ //same as arduino program
   cp5 = new ControlP5(this);
   addButtons();
   
-  String portName = "/dev/cu.usbmodem14411";
+  String portName = "/dev/cu.usbmodem145101";
   port = new Serial(this, portName, 9600);
 }
 
@@ -150,7 +150,7 @@ void old(){
   port.write(1);
 }
 
-void excercising(){
+void exercising(){
   port.write(2);
 }
 
